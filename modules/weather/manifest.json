@@ -1,0 +1,56 @@
+{
+  "name": "Weather",
+  "version": "1.0.0",
+  "description": "Weather display with third-party push API support",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "location": {
+      "type": "text",
+      "label": "City",
+      "default": "Berlin"
+    },
+    "provider": {
+      "type": "select",
+      "label": "Provider",
+      "options": [
+        {
+          "value": "wttr",
+          "label": "wttr.in"
+        },
+        {
+          "value": "openmeteo",
+          "label": "Open-Meteo"
+        }
+      ],
+      "default": "wttr"
+    },
+    "fontScale": {
+      "type": "number",
+      "label": "Font scale",
+      "description": "Multiplier for text size. 1 = auto-fit, 1.5 = 50 % bigger, 0.7 = smaller.",
+      "default": 1
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

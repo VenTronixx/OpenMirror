@@ -1,0 +1,51 @@
+{
+  "name": "Spotify",
+  "version": "1.0.0",
+  "description": "Embeds a Spotify playlist or album player. Requires a Spotify account (free or Premium) logged in in the mirror browser to play music.",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "playlistId": {
+      "type": "text",
+      "label": "Spotify playlist or album ID",
+      "description": "Copy the ID from a Spotify share link. You must be logged into Spotify on the mirror to hear audio.",
+      "default": "37i9dQZF1DXcBWIGoYBM5M"
+    },
+    "type": {
+      "type": "select",
+      "label": "Embed type",
+      "options": [
+        {
+          "value": "playlist",
+          "label": "Playlist"
+        },
+        {
+          "value": "album",
+          "label": "Album"
+        }
+      ],
+      "default": "playlist"
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

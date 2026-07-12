@@ -1,0 +1,63 @@
+{
+  "name": "System Info",
+  "version": "1.0.0",
+  "description": "Shows CPU, memory and disk usage of the mirror server",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "System"
+    },
+    "showCpu": {
+      "type": "select",
+      "label": "Show CPU temp/load",
+      "options": [
+        {
+          "value": "temp",
+          "label": "Temperature only"
+        },
+        {
+          "value": "load",
+          "label": "Load only"
+        },
+        {
+          "value": "both",
+          "label": "Temperature and load"
+        },
+        {
+          "value": "none",
+          "label": "Off"
+        }
+      ],
+      "default": "both"
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (seconds)",
+      "default": 10
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

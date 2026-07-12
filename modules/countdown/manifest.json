@@ -1,0 +1,53 @@
+{
+  "name": "Countdown",
+  "version": "1.0.0",
+  "description": "Counts down to a target date and time.",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Countdown"
+    },
+    "targetDate": {
+      "type": "text",
+      "label": "Target date",
+      "description": "ISO date/time, e.g. 2026-12-24T18:00:00",
+      "placeholder": "2026-12-24T18:00:00",
+      "default": ""
+    },
+    "showSeconds": {
+      "type": "checkbox",
+      "label": "Show seconds",
+      "default": true
+    },
+    "finishedText": {
+      "type": "text",
+      "label": "Finished text",
+      "description": "Text shown when the target date is reached.",
+      "default": "It's time!"
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    }
+  }
+}

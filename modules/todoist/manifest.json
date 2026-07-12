@@ -1,0 +1,55 @@
+{
+  "name": "Todoist",
+  "version": "1.0.0",
+  "description": "Shows tasks from a Todoist project",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Tasks"
+    },
+    "token": {
+      "type": "text",
+      "label": "Todoist API token",
+      "default": ""
+    },
+    "projectId": {
+      "type": "text",
+      "label": "Project ID (optional)",
+      "default": ""
+    },
+    "maxTasks": {
+      "type": "number",
+      "label": "Max tasks",
+      "default": 8
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 5
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

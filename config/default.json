@@ -1,0 +1,142 @@
+{
+  "language": "en-US",
+  "grid": {
+    "columns": 12,
+    "rows": 8
+  },
+  "rotation": {
+    "enabled": true,
+    "interval": 10
+  },
+  "faceLock": {
+    "enabled": false,
+    "confidenceThreshold": 0.6,
+    "releaseDelay": 3,
+    "showPreview": false,
+    "persons": [],
+    "defaultPage": "Main",
+    "unknownPage": "Main"
+  },
+  "saas": {
+    "enabled": false,
+    "backendUrl": "wss://saas.openmirror.example/devices",
+    "licenseKey": "",
+    "deviceId": "",
+    "deviceName": "",
+    "telemetry": {
+      "hardware": false,
+      "presence": false,
+      "face": false,
+      "mqtt": false,
+      "all": false
+    }
+  },
+  "voice": {
+    "enabled": false,
+    "wakeWord": "mirror",
+    "language": "en-US",
+    "requireWakeWord": true,
+    "commands": {
+      "next page": "page.next",
+      "previous page": "page.previous",
+      "go to sleep": "presence.sleep",
+      "wake up": "presence.wake"
+    }
+  },
+  "mqtt": {
+    "enabled": false,
+    "broker": {
+      "host": "localhost",
+      "port": 1883,
+      "protocol": "mqtt",
+      "clientId": "openmirror",
+      "username": "",
+      "password": ""
+    },
+    "publish": {
+      "hardware": "openmirror/hardware",
+      "presence": "openmirror/presence"
+    },
+    "subscribe": [
+      {
+        "topic": "openmirror/command",
+        "eventType": "mqtt.command"
+      }
+    ]
+  },
+  "presence": {
+    "enabled": true,
+    "source": "hardware",
+    "wakeEvents": ["motion.detected"],
+    "sleepEvents": [],
+    "timeout": 30,
+    "display": {
+      "onCommand": "",
+      "offCommand": ""
+    }
+  },
+  "hardware": [
+    {
+      "id": "test-motion",
+      "name": "Test Motion",
+      "type": "test",
+      "enabled": true,
+      "settings": {
+        "interval": 60
+      },
+      "events": {
+        "trigger": "motion.detected"
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "Main",
+      "modules": {
+        "clock": {
+          "x": 0,
+          "y": 0,
+          "width": 4,
+          "height": 2,
+          "config": {
+            "align": "center"
+          }
+        },
+        "weather": {
+          "x": 8,
+          "y": 0,
+          "width": 4,
+          "height": 2,
+          "config": {
+            "location": "Berlin",
+            "align": "left"
+          }
+        },
+        "calendar": {
+          "x": 0,
+          "y": 2,
+          "width": 6,
+          "height": 4,
+          "config": {
+            "title": "Kalender",
+            "icsUrl": "",
+            "maxEvents": 8,
+            "refreshInterval": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "Focus",
+      "modules": {
+        "clock": {
+          "x": 4,
+          "y": 3,
+          "width": 4,
+          "height": 2,
+          "config": {}
+        }
+      }
+    }
+  ]
+}

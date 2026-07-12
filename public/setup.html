@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenMirror Setup</title>
+  <link rel="stylesheet" href="/css/setup.css?v=11">
+</head>
+<body>
+  <div class="setup">
+    <header class="topbar">
+      <h1>OpenMirror Setup</h1>
+      <nav class="top-tabs">
+        <button type="button" data-tab="layout" class="active">Modules</button>
+        <button type="button" data-tab="settings">Settings</button>
+        <button type="button" data-tab="cloud">Cloud</button>
+        <button type="button" data-tab="hardware">Hardware</button>
+        <button type="button" data-tab="faces">Faces</button>
+        <button type="button" data-tab="config">Config</button>
+      </nav>
+      <div class="top-actions">
+        <label class="checkbox-label preview-toggle">
+          <input type="checkbox" id="preview-toggle">
+          Live preview
+        </label>
+        <a href="/" target="_blank" class="open-btn small">Open Mirror</a>
+        <button type="button" id="save-btn" class="primary small">Save Layout</button>
+        <button type="button" id="push-btn" class="secondary small">Push to Screen</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- LAYOUT TAB -->
+      <section class="tab-panel active" id="tab-layout">
+        <div class="layout-workspace">
+          <aside class="layout-modules layout-modules-left">
+            <div class="card modules-card">
+              <div class="section-header">
+                <h3>Available Modules</h3>
+                <span class="count-badge" id="available-count">0</span>
+              </div>
+              <p class="hint">Drag a module onto the grid. Use <strong>+</strong> to duplicate a module with its own settings.</p>
+              <ul id="module-list"></ul>
+            </div>
+          </aside>
+
+          <div class="layout-center">
+            <div class="page-tabs" id="page-tabs"></div>
+            <div class="page-toolbar">
+              <label class="input-label" style="margin:0;">
+                Show this page when face detected
+                <select id="page-face-select">
+                  <option value="">Anybody / always</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid-scroll">
+              <div id="grid" class="grid"></div>
+            </div>
+            <p class="hint">Drag modules to move. Drag the blue corner to resize.</p>
+          </div>
+
+          <aside class="layout-modules layout-modules-right">
+            <div class="card used-modules-card">
+              <div class="section-header">
+                <h3>Used Modules</h3>
+                <span class="count-badge" id="used-count">0</span>
+              </div>
+              <p class="hint">Modules on the current page. Click ⚙ to configure, or ✕ to remove.</p>
+              <ul id="used-module-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SETTINGS TAB -->
+      <section class="tab-panel" id="tab-settings">
+        <div class="settings-layout">
+          <aside class="settings-sidebar">
+            <button type="button" class="settings-category active" data-settings-category="rotation">Page Rotation</button>
+            <button type="button" class="settings-category" data-settings-category="language">Language</button>
+            <button type="button" class="settings-category" data-settings-category="display">Display Orientation</button>
+            <button type="button" class="settings-category" data-settings-category="face-lock">Face Lock</button>
+            <button type="button" class="settings-category" data-settings-category="voice">Voice Commands</button>
+            <button type="button" class="settings-category" data-settings-category="mqtt">MQTT Bridge</button>
+            <button type="button" class="settings-category" data-settings-category="theme">Theme</button>
+            <button type="button" class="settings-category" data-settings-category="presence">Presence</button>
+          </aside>
+
+          <div class="settings-detail">
+            <div class="settings-panel active" id="settings-panel-rotation">
+              <div class="card">
+                <h3>Page Rotation</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="rotation-enabled">
+                  Enable page rotation
+                </label>
+                <label class="input-label">
+                  Interval in seconds
+                  <input type="number" id="rotation-interval" min="1" value="10">
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-language">
+              <div class="card">
+                <h3>Language</h3>
+                <label class="input-label">
+                  Interface / weather language
+                  <select id="language">
+                    <option value="en-US">English</option>
+                    <option value="de-DE">Deutsch</option>
+                    <option value="es-ES">Español</option>
+                    <option value="fr-FR">Français</option>
+                    <option value="it-IT">Italiano</option>
+                    <option value="nl-NL">Nederlands</option>
+                    <option value="pl-PL">Polski</option>
+                    <option value="pt-PT">Português</option>
+                    <option value="ru-RU">Русский</option>
+                    <option value="tr-TR">Türkçe</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja-JP">日本語</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-display">
+              <div class="card">
+                <h3>Display Orientation</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="screen-rotation">
+                  Portrait preview (matches a 90° rotated screen)
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-face-lock">
+              <div class="card">
+                <h3>Face Lock</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="face-lock-enabled">
+                  Enable face lock
+                </label>
+                <label class="input-label">
+                  Release delay in seconds
+                  <input type="number" id="face-lock-release" min="1" value="3">
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="face-lock-preview">
+                  Show camera preview
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-voice">
+              <div class="card">
+                <h3>Voice Commands</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="voice-enabled">
+                  Enable voice commands
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="voice-require-wake">
+                  Require wake word
+                </label>
+                <label class="input-label">
+                  Wake word
+                  <input type="text" id="voice-wake-word" value="mirror">
+                </label>
+                <label class="input-label">
+                  Language
+                  <select id="voice-language">
+                    <option value="en-US">English</option>
+                    <option value="de-DE">Deutsch</option>
+                    <option value="es-ES">Español</option>
+                    <option value="fr-FR">Français</option>
+                    <option value="it-IT">Italiano</option>
+                    <option value="nl-NL">Nederlands</option>
+                    <option value="pl-PL">Polski</option>
+                    <option value="pt-PT">Português</option>
+                    <option value="ru-RU">Русский</option>
+                    <option value="tr-TR">Türkçe</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja-JP">日本語</option>
+                  </select>
+                </label>
+                <label class="input-label">
+                  Commands (one per line, format: phrase=event)
+                  <textarea id="voice-commands" rows="5">next page=page.next
+previous page=page.previous
+go to sleep=presence.sleep
+wake up=presence.wake</textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-mqtt">
+              <div class="card">
+                <h3>MQTT Bridge</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="mqtt-enabled">
+                  Enable MQTT bridge
+                </label>
+                <label class="input-label">
+                  Broker host
+                  <input type="text" id="mqtt-host" value="localhost">
+                </label>
+                <label class="input-label">
+                  Broker port
+                  <input type="number" id="mqtt-port" value="1883">
+                </label>
+                <label class="input-label">
+                  Protocol
+                  <select id="mqtt-protocol">
+                    <option value="mqtt">mqtt</option>
+                    <option value="mqtts">mqtts</option>
+                    <option value="ws">ws</option>
+                  </select>
+                </label>
+                <label class="input-label">
+                  Client ID
+                  <input type="text" id="mqtt-client-id" value="openmirror">
+                </label>
+                <label class="input-label">
+                  Username (optional)
+                  <input type="text" id="mqtt-username">
+                </label>
+                <label class="input-label">
+                  Password (optional)
+                  <input type="password" id="mqtt-password">
+                </label>
+                <label class="input-label">
+                  Hardware publish topic
+                  <input type="text" id="mqtt-publish-hardware" value="openmirror/hardware">
+                </label>
+                <label class="input-label">
+                  Presence publish topic
+                  <input type="text" id="mqtt-publish-presence" value="openmirror/presence">
+                </label>
+                <label class="input-label">
+                  Subscribe topics (one per line, format: topic=eventType)
+                  <textarea id="mqtt-subscribe" rows="3">openmirror/command=mqtt.command</textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-theme">
+              <div class="card">
+                <h3>Theme</h3>
+                <label class="input-label">
+                  Background color
+                  <input type="text" id="theme-background" placeholder="#000000 or url(...)">
+                </label>
+                <label class="input-label">
+                  Custom CSS
+                  <textarea id="theme-custom-css" rows="5" placeholder=".module { border-radius: 12px; }"></textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-panel" id="settings-panel-presence">
+              <div class="card">
+                <h3>Presence</h3>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="presence-enabled">
+                  Enable presence wake/sleep
+                </label>
+                <label class="input-label">
+                  Presence source
+                  <select id="presence-source">
+                    <option value="hardware" selected>Hardware sensor (radar / IR / PIR)</option>
+                    <option value="camera">Camera (face detection)</option>
+                  </select>
+                </label>
+                <div id="presence-hardware-fields">
+                  <label class="input-label">
+                    Wake events (comma separated)
+                    <input type="text" id="presence-wake-events" value="motion.detected">
+                  </label>
+                  <label class="input-label">
+                    Sleep events (comma separated)
+                    <input type="text" id="presence-sleep-events" value="">
+                  </label>
+                </div>
+                <label class="input-label">
+                  Sleep timeout in seconds
+                  <input type="number" id="presence-timeout" min="1" value="30">
+                </label>
+                <label class="input-label">
+                  Display on command (optional)
+                  <input type="text" id="presence-on-command" placeholder="vcgencmd display_power 1">
+                </label>
+                <label class="input-label">
+                  Display off command (optional)
+                  <input type="text" id="presence-off-command" placeholder="vcgencmd display_power 0">
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CLOUD / SaaS TAB -->
+      <section class="tab-panel" id="tab-cloud">
+        <div class="settings-grid">
+          <div class="card">
+            <h3>SaaS Remote Management</h3>
+            <p class="hint">Connect this mirror to a hosted OpenMirror SaaS backend for remote control and configuration.</p>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-enabled">
+              Enable SaaS connection
+            </label>
+            <label class="input-label">
+              Backend URL
+              <input type="text" id="saas-backend-url" value="wss://saas.openmirror.example/devices" placeholder="wss://.../devices">
+            </label>
+            <label class="input-label">
+              License key
+              <input type="text" id="saas-license-key" placeholder="OM-XXXX-XXXX">
+            </label>
+            <label class="input-label">
+              Device ID
+              <input type="text" id="saas-device-id" placeholder="mirror-kitchen">
+            </label>
+            <label class="input-label">
+              Device name
+              <input type="text" id="saas-device-name" placeholder="Kitchen Mirror">
+            </label>
+            <button type="button" id="saas-test-btn" class="secondary">Test Connection</button>
+            <p id="saas-status" class="hint" style="margin-top:0.75rem">Not configured</p>
+          </div>
+
+          <div class="card">
+            <h3>Telemetry</h3>
+            <p class="hint">Choose which events are forwarded to the SaaS backend. Requires a matching license tier.</p>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-telemetry-hardware">
+              Hardware events
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-telemetry-presence">
+              Presence events
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-telemetry-face">
+              Face recognition events
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-telemetry-mqtt">
+              MQTT bridge events
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="saas-telemetry-all">
+              All events
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- HARDWARE TAB -->
+      <section class="tab-panel" id="tab-hardware">
+        <div class="hardware-tabs">
+          <button type="button" data-hw-tab="usb" class="active">USB</button>
+          <button type="button" data-hw-tab="audio">Audio</button>
+          <button type="button" data-hw-tab="gpio">GPIO</button>
+        </div>
+
+        <div class="hardware-panels">
+          <!-- USB -->
+          <div class="hw-panel active" id="hw-panel-usb">
+            <div class="two-column">
+              <div class="card">
+                <h3>USB Devices</h3>
+                <ul id="usb-list"></ul>
+              </div>
+              <div class="card">
+                <h3>Assign USB Device</h3>
+                <label class="input-label">
+                  USB device
+                  <select id="usb-device"></select>
+                </label>
+                <label class="input-label">
+                  Role
+                  <select id="usb-role"></select>
+                </label>
+                <label class="input-label">
+                  Name
+                  <input type="text" id="usb-name" placeholder="e.g. USB Mic">
+                </label>
+                <div id="usb-settings"></div>
+                <button type="button" id="add-usb-btn">Save USB Device</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio -->
+          <div class="hw-panel" id="hw-panel-audio">
+            <div class="two-column">
+              <div class="card">
+                <h3>Audio Outputs</h3>
+                <ul id="audio-list"></ul>
+              </div>
+              <div class="card">
+                <h3>Set Speaker</h3>
+                <label class="input-label">
+                  Audio output
+                  <select id="audio-output"></select>
+                </label>
+                <label class="input-label">
+                  Name
+                  <input type="text" id="audio-name" placeholder="e.g. Speaker">
+                </label>
+                <button type="button" id="add-audio-btn">Save Speaker</button>
+                <div id="audio-controls" class="hidden" style="margin-top:1rem">
+                  <label class="input-label">
+                    Volume
+                    <input type="range" id="audio-volume" min="0" max="100" value="50">
+                  </label>
+                  <button type="button" id="test-audio-btn" class="secondary">Test Sound</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GPIO -->
+          <div class="hw-panel" id="hw-panel-gpio">
+            <div class="two-column">
+              <div class="card">
+                <h3>GPIO Devices</h3>
+                <ul id="gpio-list"></ul>
+              </div>
+              <div class="card">
+                <h3>Add GPIO Device</h3>
+                <label class="input-label">
+                  Name
+                  <input type="text" id="gpio-name" placeholder="e.g. Motion Sensor">
+                </label>
+                <div id="gpio-pins"></div>
+                <button type="button" id="add-gpio-pin-btn" class="secondary small">+ Add Pin</button>
+                <button type="button" id="add-gpio-btn" style="margin-top:1rem">Save GPIO Device</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FACES TAB -->
+      <section class="tab-panel" id="tab-faces">
+        <div class="three-column">
+          <div class="card">
+            <h3>Known Faces</h3>
+            <p class="hint" id="face-model-status">Checking model…</p>
+            <label class="input-label">
+              Training algorithm
+              <select id="face-algorithm">
+                <option value="LBPH" selected>LBPH (recommended)</option>
+                <option value="EigenFaces">EigenFaces (PCA)</option>
+                <option value="FisherFaces">FisherFaces</option>
+              </select>
+            </label>
+            <ul id="face-list"></ul>
+          </div>
+          <div class="card">
+            <h3>Upload Photos</h3>
+            <label class="input-label">
+              Name
+              <input type="text" id="new-face-name" placeholder="e.g. Timo">
+            </label>
+            <label class="input-label">
+              Photos (10–20 frontal face photos)
+              <input type="file" id="new-face-photos" accept="image/*" multiple>
+            </label>
+            <button type="button" id="upload-face-btn">Upload Photos</button>
+            <p id="face-upload-status" class="hint" style="margin-top:0.75rem"></p>
+          </div>
+          <div class="card">
+            <h3>Test Recognition</h3>
+            <p class="hint" id="face-camera-status">Checking camera…</p>
+            <div id="face-camera-preview" class="camera-preview">
+              <span class="camera-preview-placeholder">Camera preview</span>
+            </div>
+            <button type="button" id="face-test-btn">Start Test</button>
+            <p id="face-test-result" class="hint" style="margin-top:0.75rem">Press Start Test and look at the camera.</p>
+          </div>
+        </div>
+
+        <div id="face-training-status" class="card hidden" style="margin-top:1rem;">
+          <h3>Training in Progress</h3>
+          <div class="progress">
+            <div id="face-training-bar" class="progress-bar"></div>
+          </div>
+          <p id="face-training-text" class="hint" style="margin-top:0.25rem"></p>
+          <p class="hint">You can close this window or even change pages — training continues in the background.</p>
+        </div>
+      </section>
+
+      <!-- CONFIG TAB -->
+      <section class="tab-panel" id="tab-config">
+        <div class="config-panel">
+          <div class="card">
+            <h3>Current Config</h3>
+            <pre id="config-json"></pre>
+            <button type="button" id="save-btn-config" class="primary">Save Layout</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Module config modal -->
+  <div id="module-config-modal" class="modal hidden">
+    <div class="modal-content card">
+      <h3 id="module-config-title">Module Settings</h3>
+      <div id="module-config-form"></div>
+      <div class="modal-actions">
+        <button type="button" id="module-config-cancel" class="secondary">Cancel</button>
+        <button type="button" id="module-config-save" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/setup.js?v=9"></script>
+</body>
+</html>

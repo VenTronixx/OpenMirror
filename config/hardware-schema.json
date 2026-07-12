@@ -1,0 +1,68 @@
+[
+  {
+    "type": "microphone",
+    "category": "usb",
+    "name": "USB Microphone",
+    "description": "USB microphone for voice commands or recording",
+    "settings": {
+      "usbDevice": { "type": "usbdevice", "label": "USB device" },
+      "sampleRate": { "type": "number", "label": "Sample rate (Hz)", "default": 16000 },
+      "testDuration": { "type": "number", "label": "Test duration (seconds)", "default": 3 }
+    }
+  },
+  {
+    "type": "camera",
+    "category": "usb",
+    "name": "USB Camera",
+    "description": "USB or Pi camera used for face recognition and presence detection",
+    "settings": {
+      "usbDevice": { "type": "usbdevice", "label": "USB device" },
+      "cameraIndex": { "type": "number", "label": "Camera index", "default": 0 },
+      "width": { "type": "number", "label": "Width (px)", "default": 640 },
+      "height": { "type": "number", "label": "Height (px)", "default": 480 }
+    }
+  },
+  {
+    "type": "serial",
+    "category": "usb",
+    "name": "USB Serial Device",
+    "description": "Generic USB-to-serial adapter for sensors, microcontrollers, etc.",
+    "settings": {
+      "usbDevice": { "type": "usbdevice", "label": "USB device" },
+      "port": { "type": "text", "label": "Serial port (e.g. /dev/ttyUSB0)" },
+      "baudRate": { "type": "number", "label": "Baud rate", "default": 9600 }
+    }
+  },
+  {
+    "type": "radar",
+    "category": "usb",
+    "name": "Radar / mmWave Sensor",
+    "description": "Serial-based presence radar such as LD2410",
+    "settings": {
+      "usbDevice": { "type": "usbdevice", "label": "USB device" },
+      "port": { "type": "text", "label": "Serial port (e.g. /dev/ttyUSB0)" },
+      "baudRate": { "type": "number", "label": "Baud rate", "default": 115200 },
+      "model": { "type": "select", "label": "Model", "default": "ld2410", "options": ["ld2410", "generic"] },
+      "onString": { "type": "text", "label": "Detect string", "default": "ON" },
+      "offString": { "type": "text", "label": "Clear string", "default": "OFF" }
+    }
+  },
+  {
+    "type": "speaker",
+    "category": "audio",
+    "name": "Speaker",
+    "description": "Audio output such as 3.5 mm jack, HDMI or Bluetooth",
+    "settings": {
+      "audioOutput": { "type": "audiooutput", "label": "Audio output" }
+    }
+  },
+  {
+    "type": "gpio",
+    "category": "gpio",
+    "name": "GPIO Pins",
+    "description": "Raspberry Pi GPIO pin inputs for PIR, radar or buttons",
+    "settings": {
+      "pins": { "type": "pins", "label": "Pins" }
+    }
+  }
+]

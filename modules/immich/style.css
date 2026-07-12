@@ -1,0 +1,30 @@
+.immich-title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.immich-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: var(--module-align-flex, center);
+  justify-content: var(--module-align-flex, center);
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+}
+
+.immich-photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.immich-photo.loaded {
+  opacity: 1;
+}

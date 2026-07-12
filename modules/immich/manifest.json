@@ -1,0 +1,55 @@
+{
+  "name": "Immich Frame",
+  "version": "1.0.0",
+  "description": "Slideshow of photos from an Immich album",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Photos"
+    },
+    "url": {
+      "type": "text",
+      "label": "Immich server URL",
+      "default": ""
+    },
+    "apiKey": {
+      "type": "text",
+      "label": "Immich API key",
+      "default": ""
+    },
+    "albumId": {
+      "type": "text",
+      "label": "Album ID",
+      "default": ""
+    },
+    "interval": {
+      "type": "number",
+      "label": "Photo interval (seconds)",
+      "default": 10
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    }
+  }
+}

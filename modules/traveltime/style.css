@@ -1,0 +1,40 @@
+.travel-title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.travel-route {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.travel-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: var(--module-align-flex, flex-start);
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
+.travel-duration {
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.travel-distance {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.travel-source {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}

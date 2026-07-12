@@ -1,0 +1,53 @@
+.air-title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.air-location {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.air-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: var(--module-align-flex, flex-start);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.air-aqi {
+  font-size: 3.5rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.air-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.air-details {
+  display: flex;
+  gap: 1rem;
+}
+
+.air-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.air-details span:first-child {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.air-details span:last-child {
+  font-size: 1.1rem;
+  font-weight: 500;
+}

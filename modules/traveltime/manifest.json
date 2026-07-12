@@ -1,0 +1,57 @@
+{
+  "name": "Travel Time",
+  "version": "1.0.0",
+  "description": "Shows driving time between two places. Uses Mapbox if you provide a token; otherwise falls back to OSRM (no live traffic).",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Travel Time"
+    },
+    "from": {
+      "type": "text",
+      "label": "From",
+      "description": "City name or 'lat,lon' coordinates.",
+      "default": "Berlin"
+    },
+    "to": {
+      "type": "text",
+      "label": "To",
+      "description": "City name or 'lat,lon' coordinates.",
+      "default": "Hamburg"
+    },
+    "mapboxToken": {
+      "type": "text",
+      "label": "Mapbox access token (optional, enables traffic)",
+      "default": ""
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 5
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

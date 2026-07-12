@@ -1,0 +1,76 @@
+{
+  "name": "Calendar",
+  "version": "1.0.0",
+  "description": "Shows upcoming events from any URL that returns an ICS calendar (the URL does not need to end in .ics).",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title (e.g. Kalender Timo)",
+      "default": ""
+    },
+    "icsUrl": {
+      "type": "text",
+      "label": "Calendar URL",
+      "description": "Paste the full link here. It can end in .php, .ics, or anything else as long as it returns ICS data.",
+      "default": ""
+    },
+    "icsFile": {
+      "type": "file",
+      "label": "Or upload an ICS file",
+      "description": "Upload a .ics file from your computer. The URL field above will be filled automatically.",
+      "default": ""
+    },
+    "viewMode": {
+      "type": "select",
+      "label": "View mode",
+      "options": [
+        {
+          "value": "upcoming",
+          "label": "Upcoming list"
+        },
+        {
+          "value": "week",
+          "label": "7-day grid"
+        },
+        {
+          "value": "month",
+          "label": "30-day grid"
+        }
+      ],
+      "default": "upcoming"
+    },
+    "maxEvents": {
+      "type": "number",
+      "label": "Max events",
+      "default": 10
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 5
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

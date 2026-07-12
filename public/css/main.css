@@ -1,0 +1,83 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+#mirror {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  cursor: none;
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 0.5rem;
+  padding: 2rem;
+}
+
+.module {
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  padding: 3cqmin;
+  overflow: hidden;
+  container-type: size;
+  container-name: module;
+}
+
+.module-align-left {
+  text-align: left;
+  --module-align: left;
+  --module-align-flex: flex-start;
+}
+
+.module-align-center {
+  text-align: center;
+  --module-align: center;
+  --module-align-flex: center;
+}
+
+.module-align-right {
+  text-align: right;
+  --module-align: right;
+  --module-align-flex: flex-end;
+}
+
+.sleep-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+  z-index: 9999;
+}
+
+body.sleeping .sleep-overlay {
+  opacity: 0.97;
+}
+
+body.sleeping #mirror {
+  filter: brightness(0.05);
+}

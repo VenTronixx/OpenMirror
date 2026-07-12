@@ -1,0 +1,45 @@
+{
+  "name": "Air Quality",
+  "version": "1.0.0",
+  "description": "Shows air quality index and pollutants for a city using Open-Meteo",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Air Quality"
+    },
+    "location": {
+      "type": "text",
+      "label": "City",
+      "default": "Berlin"
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 10
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

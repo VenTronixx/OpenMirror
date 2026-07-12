@@ -1,0 +1,92 @@
+{
+  "name": "News / RSS",
+  "version": "1.0.0",
+  "description": "Displays headlines from any RSS or Atom feed",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "News"
+    },
+    "url": {
+      "type": "text",
+      "label": "RSS/Atom feed URL",
+      "default": "https://news.ycombinator.com/rss"
+    },
+    "displayMode": {
+      "type": "select",
+      "label": "Display mode",
+      "options": [
+        {
+          "value": "list",
+          "label": "List of headlines"
+        },
+        {
+          "value": "slide",
+          "label": "One full entry at a time"
+        }
+      ],
+      "default": "list"
+    },
+    "showSnippet": {
+      "type": "checkbox",
+      "label": "Show description snippet",
+      "default": true
+    },
+    "snippetLength": {
+      "type": "number",
+      "label": "Snippet length (characters)",
+      "default": 120
+    },
+    "slideInterval": {
+      "type": "number",
+      "label": "Slide interval (seconds)",
+      "default": 10
+    },
+    "maxItems": {
+      "type": "number",
+      "label": "Max items",
+      "default": 6
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 10
+    },
+    "fontScale": {
+      "type": "number",
+      "label": "Font scale",
+      "description": "Multiplier for text size. 1 = auto-fit, 1.5 = 50 % bigger, 0.7 = smaller.",
+      "default": 1
+    },
+    "snippetLines": {
+      "type": "select",
+      "label": "Snippet lines in list",
+      "options": [
+        { "value": 0, "label": "Off" },
+        { "value": 1, "label": "1 line" },
+        { "value": 2, "label": "2 lines" }
+      ],
+      "default": 1
+    },
+    "showDate": {
+      "type": "checkbox",
+      "label": "Show publish date",
+      "default": true
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    }
+  }
+}

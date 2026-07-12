@@ -1,0 +1,52 @@
+.todoist-title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.todoist-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow: hidden;
+}
+
+.todoist-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.25;
+  font-size: 0.95rem;
+}
+
+.todoist-list li::before {
+  content: '☐';
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.todoist-list li.done::before {
+  content: '☑';
+  opacity: 0.5;
+}
+
+.todoist-list li.done span {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.todoist-list span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.todoist-empty {
+  font-size: 0.9rem;
+  opacity: 0.6;
+}

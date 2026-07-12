@@ -1,0 +1,86 @@
+{
+  "name": "Ticker",
+  "version": "1.0.0",
+  "description": "Crypto and stock price ticker (crypto works without an API key; stocks need a Finnhub key)",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Ticker"
+    },
+    "symbols": {
+      "type": "text",
+      "label": "Symbols (comma separated)",
+      "description": "Crypto: bitcoin, ethereum. Stocks: AAPL, TSLA (requires Finnhub token).",
+      "default": "bitcoin,ethereum"
+    },
+    "currency": {
+      "type": "select",
+      "label": "Currency",
+      "options": [
+        {
+          "value": "usd",
+          "label": "USD"
+        },
+        {
+          "value": "eur",
+          "label": "EUR"
+        },
+        {
+          "value": "gbp",
+          "label": "GBP"
+        },
+        {
+          "value": "chf",
+          "label": "CHF"
+        },
+        {
+          "value": "jpy",
+          "label": "JPY"
+        },
+        {
+          "value": "cad",
+          "label": "CAD"
+        },
+        {
+          "value": "aud",
+          "label": "AUD"
+        }
+      ],
+      "default": "usd"
+    },
+    "stockToken": {
+      "type": "text",
+      "label": "Finnhub API token (for stocks)",
+      "default": ""
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 5
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

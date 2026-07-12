@@ -1,0 +1,56 @@
+{
+  "name": "Clock",
+  "version": "1.0.0",
+  "description": "Digital clock with date",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title (e.g. Time New York)",
+      "default": ""
+    },
+    "timezone": {
+      "type": "text",
+      "label": "Timezone (e.g. America/New_York)",
+      "default": ""
+    },
+    "fontScale": {
+      "type": "number",
+      "label": "Font scale",
+      "description": "Multiplier for text size. 1 = auto-fit, 1.5 = 50 % bigger, 0.7 = smaller.",
+      "default": 1
+    },
+    "showDate": {
+      "type": "checkbox",
+      "label": "Show date",
+      "default": true
+    },
+    "showWeekday": {
+      "type": "checkbox",
+      "label": "Show weekday",
+      "default": true
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    }
+  }
+}
