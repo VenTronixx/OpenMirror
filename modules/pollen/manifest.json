@@ -1,0 +1,112 @@
+{
+  "name": "Pollen",
+  "version": "1.0.0",
+  "description": "Shows pollen levels for a location, sorted from highest to lowest",
+  "author": "OpenMirror Team",
+  "view": "view.html",
+  "style": "style.css",
+  "main": "main.js",
+  "configSchema": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Pollen"
+    },
+    "location": {
+      "type": "text",
+      "label": "City or region",
+      "default": "Berlin"
+    },
+    "provider": {
+      "type": "select",
+      "label": "Data source",
+      "options": [
+        {
+          "value": "openmeteo",
+          "label": "Open-Meteo (global)"
+        },
+        {
+          "value": "dwd",
+          "label": "DWD (Germany)"
+        }
+      ],
+      "default": "openmeteo"
+    },
+    "dwdRegion": {
+      "type": "text",
+      "label": "DWD region",
+      "placeholder": "Search regions, e.g. Ostwestfalen",
+      "visibleWhen": {
+        "field": "provider",
+        "value": "dwd"
+      },
+      "suggestions": [
+        "Inseln und Marschen",
+        "Geest, Schleswig-Holstein und Hamburg",
+        "Mecklenburg-Vorpommern",
+        "Westl. Niedersachsen/Bremen",
+        "Östl. Niedersachsen",
+        "Niedersachsen und Bremen",
+        "Rhein.-Westfäl. Tiefland",
+        "Ostwestfalen",
+        "Mittelgebirge NRW",
+        "Nordrhein-Westfalen",
+        "Brandenburg und Berlin",
+        "Tiefland Sachsen-Anhalt",
+        "Harz",
+        "Sachsen-Anhalt",
+        "Tiefland Thüringen",
+        "Mittelgebirge Thüringen",
+        "Thüringen",
+        "Tiefland Sachsen",
+        "Mittelgebirge Sachsen",
+        "Sachsen",
+        "Nordhessen und hess. Mittelgebirge",
+        "Rhein-Main",
+        "Hessen",
+        "Rhein, Pfalz, Nahe und Mosel",
+        "Mittelgebirgsbereich Rheinland-Pfalz",
+        "Saarland",
+        "Rheinland-Pfalz und Saarland",
+        "Oberrhein und unteres Neckartal",
+        "Hohenlohe/mittlerer Neckar/Oberschwaben",
+        "Mittelgebirge Baden-Württemberg",
+        "Baden-Württemberg",
+        "Allgäu/Oberbayern/Bay. Wald",
+        "Donauniederungen",
+        "Bayern nördl. der Donau, o. Bayr. Wald, o. Mainfranken",
+        "Mainfranken",
+        "Bayern"
+      ]
+    },
+    "showValues": {
+      "type": "checkbox",
+      "label": "Show raw values",
+      "default": true
+    },
+    "refreshInterval": {
+      "type": "number",
+      "label": "Refresh interval (minutes)",
+      "default": 30
+    },
+    "align": {
+      "type": "select",
+      "label": "Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    }
+  }
+}

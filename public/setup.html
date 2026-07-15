@@ -146,6 +146,11 @@
                   Release delay in seconds
                   <input type="number" id="face-lock-release" min="1" value="3">
                 </label>
+                <label class="input-label">
+                  Confidence threshold
+                  <input type="range" id="face-lock-threshold" min="0.1" max="1.0" step="0.05" value="0.8">
+                  <small>Higher = more tolerant, but may misidentify strangers</small>
+                </label>
                 <label class="checkbox-label">
                   <input type="checkbox" id="face-lock-preview">
                   Show camera preview
@@ -475,13 +480,16 @@ wake up=presence.wake</textarea>
             <p id="face-upload-status" class="hint" style="margin-top:0.75rem"></p>
           </div>
           <div class="card">
-            <h3>Test Recognition</h3>
+            <h3>Camera Preview</h3>
             <p class="hint" id="face-camera-status">Checking camera…</p>
             <div id="face-camera-preview" class="camera-preview">
               <span class="camera-preview-placeholder">Camera preview</span>
             </div>
-            <button type="button" id="face-test-btn">Start Test</button>
-            <p id="face-test-result" class="hint" style="margin-top:0.75rem">Press Start Test and look at the camera.</p>
+            <div class="button-row">
+              <button type="button" id="face-preview-btn">Start Preview</button>
+              <button type="button" id="face-test-btn">Start Test</button>
+            </div>
+            <p id="face-test-result" class="hint" style="margin-top:0.75rem">Start Preview to check the camera, or Start Test after training.</p>
           </div>
         </div>
 

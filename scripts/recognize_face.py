@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run face detection and recognition from the Pi camera.
 
+Uses ffmpeg with V4L2 to capture MJPEG frames because OpenCV's V4L2 backend
+hangs with this USB camera on Raspberry Pi Bookworm.
+
 Outputs one JSON object per line:
   {"event":"detected","personId":"alice","confidence":42.5}
   {"event":"unknown"}
@@ -10,10 +13,29 @@ Outputs one JSON object per line:
 import argparse
 import json
 import os
+import signal
+import subprocess
 import sys
 import time
 
-import cv2
+
+_ffmpeg_proc = None
+
+
+def _configure_opencv_env():
+    """Disable video I/O backends that can hang during import on Raspberry Pi."""
+    for key in (
+        'OPENCV_VIDEOIO_PRIORITY_GSTREAMER',
+        'OPENCV_VIDEOIO_PRIORITY_V4L2',
+        'OPENCV_VIDEOIO_PRIORITY_MSMF',
+    ):
+        os.environ.setdefault(key, '0')
+    os.environ.setdefault('GST_REGISTRY_UPDATE', 'no')
+
+
+_configure_opencv_env()
+import cv2  # noqa: E402
+import numpy as np  # noqa: E402
 
 
 def parse_args():
@@ -62,6 +84,45 @@ def emit(event, **kwargs):
     print(json.dumps(data), flush=True)
 
 
+def start_ffmpeg(camera, width, height, fps, frame_path):
+    device = f'/dev/video{camera}'
+    if not os.path.exists(device):
+        raise RuntimeError(f'Camera device {device} not found')
+    proc = subprocess.Popen(
+        [
+            'ffmpeg', '-y',
+            '-f', 'v4l2',
+            '-input_format', 'mjpeg',
+            '-i', device,
+            '-vf', f'fps={fps},scale={width}:{height}',
+            '-update', '1',
+            '-q:v', '2',
+            frame_path
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL
+    )
+    return proc
+
+
+def read_frame(frame_path, timeout=5.0):
+    start = time.time()
+    while time.time() - start < timeout:
+        if os.path.exists(frame_path):
+            try:
+                with open(frame_path, 'rb') as f:
+                    data = f.read()
+                if len(data) > 0:
+                    frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+                    if frame is not None:
+                        return frame
+            except Exception:
+                pass
+        time.sleep(0.05)
+    return None
+
+
 def main():
     args = parse_args()
 
@@ -81,13 +142,31 @@ def main():
     with open(args.labels, 'r', encoding='utf-8') as f:
         labels = json.load(f)
 
-    cap = cv2.VideoCapture(args.camera)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+    emit('ready')
 
-    if not cap.isOpened():
-        emit('error', message='Cannot open camera')
-        sys.exit(1)
+    frame_dir = os.path.dirname(args.preview) if args.preview else '/tmp'
+    os.makedirs(frame_dir, exist_ok=True)
+    frame_path = os.path.join(frame_dir, f'.openmirror_frame_{os.getpid()}.jpg')
+
+    fps = max(1, int(1.0 / min(args.interval, args.preview_interval)))
+    ffmpeg = start_ffmpeg(args.camera, args.width, args.height, fps, frame_path)
+    global _ffmpeg_proc
+    _ffmpeg_proc = ffmpeg
+
+    def _shutdown(signum, frame):
+        if _ffmpeg_proc is not None:
+            try:
+                _ffmpeg_proc.terminate()
+                _ffmpeg_proc.wait(timeout=2)
+            except Exception:
+                try:
+                    _ffmpeg_proc.kill()
+                except Exception:
+                    pass
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
 
     lost_counter = 0
     last_event = None
@@ -95,61 +174,85 @@ def main():
     last_preview = 0
     current_label = None
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            time.sleep(args.interval)
-            continue
+    try:
+        # Wait for the first frame before entering the main loop.
+        frame = read_frame(frame_path, timeout=10.0)
+        if frame is None:
+            emit('error', message='Camera did not produce frames')
+            sys.exit(1)
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.2,
-            minNeighbors=5,
-            minSize=(100, 100)
-        )
+        while True:
+            frame = read_frame(frame_path, timeout=2.0)
+            if frame is None:
+                time.sleep(args.interval)
+                continue
 
-        if len(faces) == 0:
-            lost_counter += 1
-            if lost_counter >= args.lost_frames and last_event != 'lost':
-                emit('lost')
-                last_event = 'lost'
-                current_label = None
-            if args.preview and time.time() - last_preview >= args.preview_interval:
-                _write_preview(frame, args.preview, None)
-                last_preview = time.time()
-            time.sleep(args.interval)
-            continue
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.2,
+                minNeighbors=5,
+                minSize=(100, 100)
+            )
 
-        lost_counter = 0
-        x, y, w, h = faces[0]
-        face_img = gray[y:y+h, x:x+w]
+            if len(faces) == 0:
+                lost_counter += 1
+                if lost_counter >= args.lost_frames and last_event != 'lost':
+                    emit('lost')
+                    last_event = 'lost'
+                    current_label = None
+                if args.preview and time.time() - last_preview >= args.preview_interval:
+                    _write_preview(frame, args.preview, None)
+                    last_preview = time.time()
+                time.sleep(args.interval)
+                continue
 
-        # Resize to training size for Eigen/Fisher consistency
-        if args.algorithm in ('EigenFaces', 'FisherFaces'):
+            lost_counter = 0
+            x, y, w, h = faces[0]
+
+            # Add the same 10% margin used during training so the crop matches the trained images.
+            margin = int(0.1 * w)
+            x1 = max(0, x - margin)
+            y1 = max(0, y - margin)
+            x2 = min(gray.shape[1], x + w + margin)
+            y2 = min(gray.shape[0], y + h + margin)
+            face_img = gray[y1:y2, x1:x2]
+
+            # Resize to the same size used during training so the recognizer compares like-for-like.
             face_img = cv2.resize(face_img, (200, 200))
 
-        label_idx, confidence = recognizer.predict(face_img)
-        label_key = str(label_idx)
+            label_idx, confidence = recognizer.predict(face_img)
+            label_key = str(label_idx)
 
-        if confidence > args.threshold or label_key not in labels:
-            if last_event != 'unknown':
-                emit('unknown', confidence=float(confidence))
-                last_event = 'unknown'
-            current_label = 'Unknown'
-        else:
-            person = labels[label_key]
-            if last_event != 'detected' or last_person_id != person['id']:
-                emit('detected', personId=person['id'], name=person['name'], confidence=float(confidence))
-                last_event = 'detected'
-                last_person_id = person['id']
-            current_label = person['name']
+            if confidence > args.threshold or label_key not in labels:
+                if last_event != 'unknown':
+                    emit('unknown', confidence=float(confidence))
+                    last_event = 'unknown'
+                current_label = 'Unknown'
+            else:
+                person = labels[label_key]
+                if last_event != 'detected' or last_person_id != person['id']:
+                    emit('detected', personId=person['id'], name=person['name'], confidence=float(confidence))
+                    last_event = 'detected'
+                    last_person_id = person['id']
+                current_label = person['name']
 
-        if args.preview and time.time() - last_preview >= args.preview_interval:
-            _write_preview(frame, args.preview, current_label, x, y, w, h)
-            last_preview = time.time()
+            if args.preview and time.time() - last_preview >= args.preview_interval:
+                _write_preview(frame, args.preview, current_label, x, y, w, h)
+                last_preview = time.time()
 
-        time.sleep(args.interval)
+            time.sleep(args.interval)
+    finally:
+        ffmpeg.terminate()
+        try:
+            ffmpeg.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            ffmpeg.kill()
+        if os.path.exists(frame_path):
+            try:
+                os.remove(frame_path)
+            except Exception:
+                pass
 
 
 def _write_preview(frame, preview_path, label=None, x=None, y=None, w=None, h=None):

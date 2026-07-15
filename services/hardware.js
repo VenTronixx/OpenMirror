@@ -42,6 +42,7 @@ class HardwareService extends EventEmitter {
       else if (device.type === 'serial') this.startSerial(device);
       else if (device.type === 'speaker') this.startSpeaker(device);
       else if (device.type === 'microphone') this.startMicrophone(device);
+      else if (device.type === 'camera') this.startCamera(device);
       else if (device.type === 'test') this.startTest(device);
       else console.warn(`Unknown hardware type: ${device.type}`);
     } catch (err) {

@@ -14,8 +14,13 @@ PLINK="plink -ssh -batch -hostkey ${HOSTKEY} -pw ${PASS}"
 echo "=== Backing up remote config ==="
 ${PLINK} ${USER}@${HOST} "cp ${REMOTE_DIR}/config/config.json ${REMOTE_DIR}/config/config.json.bak.$(date +%Y%m%d-%H%M%S)"
 
+echo "=== Syncing shared module helpers ==="
+if [ -d "${LOCAL_DIR}/modules/shared" ]; then
+  ${PSCP} -r "${LOCAL_DIR}/modules/shared" ${USER}@${HOST}:${REMOTE_DIR}/modules/
+fi
+
 echo "=== Syncing modules ==="
-for mod in airquality calendar clock countdown immich rss spotify systeminfo ticker todoist traveltime weather; do
+for mod in airquality calendar clock countdown immich pollen rss spotify systeminfo ticker todoist traveltime weather; do
   if [ -d "${LOCAL_DIR}/modules/${mod}" ]; then
     ${PSCP} -r "${LOCAL_DIR}/modules/${mod}" ${USER}@${HOST}:${REMOTE_DIR}/modules/
   fi
@@ -40,6 +45,8 @@ ${PSCP} "${LOCAL_DIR}/saas/PLAN.md" ${USER}@${HOST}:${REMOTE_DIR}/saas/
 ${PSCP} "${LOCAL_DIR}/docs/SAAS_PROTOCOL.md" ${USER}@${HOST}:${REMOTE_DIR}/docs/
 
 echo "=== Syncing face scripts ==="
+${PSCP} "${LOCAL_DIR}/scripts/camera_utils.py" ${USER}@${HOST}:${REMOTE_DIR}/scripts/
+${PSCP} "${LOCAL_DIR}/scripts/camera_preview.py" ${USER}@${HOST}:${REMOTE_DIR}/scripts/
 ${PSCP} "${LOCAL_DIR}/scripts/train_face.py" ${USER}@${HOST}:${REMOTE_DIR}/scripts/
 ${PSCP} "${LOCAL_DIR}/scripts/recognize_face.py" ${USER}@${HOST}:${REMOTE_DIR}/scripts/
 

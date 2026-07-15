@@ -1,7 +1,7 @@
 const GRID_COLS = 12;
 const GRID_ROWS = 8;
 const BUILTIN_MODULE_IDS = new Set([
-  'airquality', 'calendar', 'clock', 'countdown', 'immich', 'rss',
+  'airquality', 'calendar', 'clock', 'countdown', 'immich', 'pollen', 'rss',
   'spotify', 'systeminfo', 'ticker', 'todoist', 'traveltime', 'weather'
 ]);
 
@@ -112,6 +112,7 @@ function bindSidebarEvents() {
   updateGridOrientation();
   document.getElementById('face-lock-enabled').checked = config.faceLock.enabled;
   document.getElementById('face-lock-release').value = config.faceLock.releaseDelay;
+  document.getElementById('face-lock-threshold').value = config.faceLock.confidenceThreshold != null ? config.faceLock.confidenceThreshold : 0.8;
   document.getElementById('face-lock-preview').checked = config.faceLock.showPreview || false;
   document.getElementById('language').addEventListener('change', () => {
     config.language = document.getElementById('language').value || 'en-US';
@@ -144,6 +145,12 @@ function bindSidebarEvents() {
   document.getElementById('face-lock-release').addEventListener('input', () => {
     const value = parseInt(document.getElementById('face-lock-release').value, 10);
     config.faceLock.releaseDelay = isNaN(value) || value < 1 ? 1 : value;
+    updateJson();
+  });
+
+  document.getElementById('face-lock-threshold').addEventListener('input', () => {
+    const value = parseFloat(document.getElementById('face-lock-threshold').value);
+    config.faceLock.confidenceThreshold = isNaN(value) ? 0.8 : Math.min(1, Math.max(0.1, value));
     updateJson();
   });
 
@@ -289,6 +296,7 @@ function bindSidebarEvents() {
   document.getElementById('saas-test-btn').addEventListener('click', testSaasConnection);
 
   document.getElementById('upload-face-btn').addEventListener('click', uploadFacePhotos);
+  document.getElementById('face-preview-btn').addEventListener('click', toggleFacePreview);
   document.getElementById('face-test-btn').addEventListener('click', toggleFaceTest);
 
   document.getElementById('save-btn').addEventListener('click', saveConfig);
@@ -532,6 +540,9 @@ function renderModuleList() {
     version.textContent = `v${mod.version}`;
     info.appendChild(version);
 
+    const actions = document.createElement('span');
+    actions.className = 'module-actions';
+
     const dupBtn = document.createElement('button');
     dupBtn.type = 'button';
     dupBtn.className = 'duplicate-btn';
@@ -541,9 +552,23 @@ function renderModuleList() {
       e.stopPropagation();
       duplicateModule(mod.id);
     });
+    actions.appendChild(dupBtn);
+
+    if (!isBuiltin) {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'delete-module-btn';
+      delBtn.title = 'Delete module folder';
+      delBtn.textContent = '🗑';
+      delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteModule(mod.id);
+      });
+      actions.appendChild(delBtn);
+    }
 
     li.appendChild(info);
-    li.appendChild(dupBtn);
+    li.appendChild(actions);
 
     li.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', mod.id);
@@ -622,6 +647,30 @@ async function duplicateModule(moduleId) {
   const newId = await promptDuplicateId(moduleId);
   if (!newId) return;
   await performDuplicate(moduleId, newId);
+}
+
+async function deleteModule(moduleId) {
+  if (!confirm(`Delete the custom module "${moduleId}" permanently? This cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/modules/${encodeURIComponent(moduleId)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'delete failed');
+
+    // Remove any instances from all pages.
+    config.pages.forEach(page => {
+      if (page.modules) delete page.modules[moduleId];
+    });
+
+    modules = await fetch('/api/modules').then(r => r.json());
+    renderModuleList();
+    renderPlacedModules();
+    updateJson();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function promptDuplicateId(moduleId) {
@@ -831,9 +880,15 @@ async function renderFaceList() {
       const item = document.createElement('li');
       item.className = 'face-item';
       const isTraining = training.state === 'training' && training.personId === face.id;
+      const progressHtml = isTraining
+        ? `<span class="face-progress" data-person-id="${face.id}">Training…</span>`
+        : '';
       item.innerHTML = `
-        <span>${face.name} (${face.photoCount || 0} photo(s))</span>
-        <span>
+        <span class="face-info">
+          <span class="face-name">${face.name} (${face.photoCount || 0} photo(s))</span>
+          ${progressHtml}
+        </span>
+        <span class="face-actions">
           <button class="train-face-btn" data-id="${face.id}" ${isTraining ? 'disabled' : ''}>
             ${isTraining ? 'Training…' : 'Train'}
           </button>
@@ -981,6 +1036,10 @@ function startFaceTrainingPolling() {
         const elapsed = Math.round((Date.now() - (status.startedAt || startedAt)) / 1000);
         progressBar.style.width = '70%';
         progressText.textContent = `Training ${status.name || ''}… ${elapsed}s elapsed`;
+        const personProgress = document.querySelector(`.face-progress[data-person-id="${status.personId}"]`);
+        if (personProgress) {
+          personProgress.textContent = `Training… ${elapsed}s elapsed`;
+        }
         faceTrainingPollTimer = setTimeout(tick, 1000);
       } else if (status.state === 'error') {
         progressBar.style.width = '0%';
@@ -1006,16 +1065,25 @@ function startFaceTrainingPolling() {
 
 async function updateFaceCameraStatus() {
   const statusEl = document.getElementById('face-camera-status');
+  const previewBtn = document.getElementById('face-preview-btn');
+  const testBtn = document.getElementById('face-test-btn');
   try {
     const res = await fetch('/api/faces/camera');
     const data = await res.json();
-    statusEl.textContent = `Camera ${data.camera} • ${data.width}x${data.height}${data.running ? ' • running' : ''}`;
+    const mode = data.recognition ? 'recognition' : (data.preview ? 'preview' : 'idle');
+    statusEl.textContent = `Camera ${data.camera} • ${data.width}x${data.height}${data.running ? ` • ${mode}` : ''}`;
+
+    facePreviewRunning = !!data.preview;
+    faceTestRunning = !!data.recognition;
+    if (previewBtn) previewBtn.textContent = facePreviewRunning ? 'Stop Preview' : 'Start Preview';
+    if (testBtn) testBtn.textContent = faceTestRunning ? 'Stop Test' : 'Start Test';
   } catch (err) {
     statusEl.textContent = 'Camera status unavailable';
   }
 }
 
 let setupWebSocket = null;
+let facePreviewRunning = false;
 let faceTestRunning = false;
 let faceTestLostTimer = null;
 
@@ -1067,9 +1135,16 @@ function handleFaceTestEvent(msg) {
     resultEl.textContent = `Detected: ${name} (confidence ${Math.round(msg.confidence || 0)})`;
     resultEl.style.color = '#4caf50';
   } else if (msg.event === 'unknown') {
-    resultEl.textContent = 'Unknown face detected';
+    const conf = msg.confidence != null ? ` (confidence ${Math.round(msg.confidence)})` : '';
+    resultEl.textContent = 'Unknown face detected' + conf;
     resultEl.style.color = '#ff9800';
     scheduleFaceTestLost(resultEl);
+  } else if (msg.event === 'error') {
+    resultEl.textContent = 'Error: ' + (msg.message || 'Face recognition failed');
+    resultEl.style.color = '#f44336';
+  } else if (msg.event === 'ready') {
+    resultEl.textContent = 'Look at the camera…';
+    resultEl.style.color = '';
   } else if (msg.event === 'lost' || msg.event === 'cleared') {
     resultEl.textContent = 'No face detected';
     resultEl.style.color = '';
@@ -1102,19 +1177,48 @@ function startFaceTestPreview() {
   const img = document.createElement('img');
   img.alt = 'Camera preview';
   img.style.display = 'none';
-  img.onload = () => {
-    if (faceTestPreviewLoaded) return;
-    faceTestPreviewLoaded = true;
-    img.style.display = '';
-    status.style.display = 'none';
-  };
   preview.appendChild(img);
 
-  const update = () => {
-    img.src = `/api/faces/camera/preview?t=${Date.now()}`;
+  let lastObjectUrl = null;
+
+  const showFrame = url => {
+    img.src = url;
+    if (!faceTestPreviewLoaded) {
+      faceTestPreviewLoaded = true;
+      img.style.display = '';
+      status.style.display = 'none';
+    }
   };
+
+  const update = async () => {
+    if (!faceTestPreviewTimer) return;
+    try {
+      const res = await fetch(`/api/faces/camera/preview?t=${Date.now()}`, { cache: 'no-store' });
+      if (!faceTestPreviewTimer) return;
+      if (!res.ok) {
+        status.textContent = 'Waiting for camera feed…';
+        return;
+      }
+      const blob = await res.blob();
+      if (!blob.type.startsWith('image/')) {
+        status.textContent = 'Waiting for camera feed…';
+        return;
+      }
+      if (lastObjectUrl) {
+        URL.revokeObjectURL(lastObjectUrl);
+      }
+      lastObjectUrl = URL.createObjectURL(blob);
+      showFrame(lastObjectUrl);
+    } catch (err) {
+      if (faceTestPreviewTimer) {
+        status.textContent = 'Waiting for camera feed…';
+      }
+    }
+  };
+
+  img.dataset.previewUrl = '';
   update();
-  faceTestPreviewTimer = setInterval(update, 250);
+  faceTestPreviewTimer = setInterval(update, 500);
 }
 
 function stopFaceTestPreview() {
@@ -1125,7 +1229,51 @@ function stopFaceTestPreview() {
   faceTestPreviewLoaded = false;
   const preview = document.getElementById('face-camera-preview');
   if (preview) {
+    const img = preview.querySelector('img');
+    if (img && img.src && img.src.startsWith('blob:')) {
+      URL.revokeObjectURL(img.src);
+    }
     preview.innerHTML = '<span class="camera-preview-placeholder">Camera preview</span>';
+  }
+}
+
+async function toggleFacePreview() {
+  const btn = document.getElementById('face-preview-btn');
+  const resultEl = document.getElementById('face-test-result');
+
+  if (facePreviewRunning) {
+    try {
+      btn.disabled = true;
+      await fetch('/api/faces/camera/preview/stop', { method: 'POST' });
+      facePreviewRunning = false;
+      stopFaceTestPreview();
+      btn.textContent = 'Start Preview';
+      resultEl.textContent = 'Preview stopped.';
+      resultEl.style.color = '';
+    } catch (err) {
+      resultEl.textContent = 'Failed to stop preview: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+    updateFaceCameraStatus();
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    resultEl.textContent = 'Starting camera preview…';
+    const res = await fetch('/api/faces/camera/preview/start', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Preview failed');
+    facePreviewRunning = true;
+    btn.textContent = 'Stop Preview';
+    resultEl.textContent = 'Camera preview running.';
+    startFaceTestPreview();
+    updateFaceCameraStatus();
+  } catch (err) {
+    resultEl.textContent = 'Preview failed: ' + err.message;
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -1158,7 +1306,7 @@ async function toggleFaceTest() {
     if (!res.ok) throw new Error(data.error || 'Test failed');
     faceTestRunning = true;
     btn.textContent = 'Stop Test';
-    resultEl.textContent = 'Look at the camera…';
+    resultEl.textContent = 'Loading face recognition model (this can take 10–20 s)…';
     startFaceTestPreview();
     updateFaceCameraStatus();
   } catch (err) {
@@ -1623,8 +1771,10 @@ function renderPlacedModules() {
     el.className = 'placed-module';
     el.dataset.id = id;
     const hasConfig = mod && mod.configSchema && Object.keys(mod.configSchema).length > 0;
+    const align = placement.config?.align || 'center';
+    const headerAlign = ['left', 'center', 'right'].includes(align) ? align : 'center';
     el.innerHTML = `
-      <div class="placed-module-header">
+      <div class="placed-module-header placed-module-header-${headerAlign}">
         <strong>${mod ? mod.name : id}</strong>
         ${hasConfig ? `<button class="config-btn" data-id="${id}" title="Configure">⚙</button>` : ''}
         <button class="remove-btn" data-id="${id}">x</button>
@@ -1676,6 +1826,12 @@ async function loadModulePreview(id, placement, container) {
     wrapper.className = `module module-${id}`;
     wrapper.style.width = '100%';
     wrapper.style.height = '100%';
+    wrapper.style.background = '#000';
+    wrapper.style.borderRadius = '0.5rem';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.padding = '3cqmin';
+    wrapper.style.containerType = 'size';
+    wrapper.style.containerName = 'module';
 
     const area = (placement.width || 1) * (placement.height || 1);
     const moduleScale = Math.sqrt(area / 4);
@@ -1717,10 +1873,12 @@ async function loadModulePreview(id, placement, container) {
 }
 
 function applyStyle(el, placement) {
-  el.style.left = `${placement.x / GRID_COLS * 100}%`;
-  el.style.top = `${placement.y / GRID_ROWS * 100}%`;
-  el.style.width = `${placement.width / GRID_COLS * 100}%`;
-  el.style.height = `${placement.height / GRID_ROWS * 100}%`;
+  el.style.gridColumn = `${placement.x + 1} / span ${placement.width}`;
+  el.style.gridRow = `${placement.y + 1} / span ${placement.height}`;
+  el.style.left = '';
+  el.style.top = '';
+  el.style.width = '';
+  el.style.height = '';
 }
 
 let configModuleId = null;
@@ -1741,6 +1899,10 @@ function openModuleConfig(id) {
   Object.entries(mod.configSchema).forEach(([key, field]) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'config-field';
+    if (field.visibleWhen) {
+      wrapper.dataset.visibleWhenField = field.visibleWhen.field;
+      wrapper.dataset.visibleWhenValue = String(field.visibleWhen.value);
+    }
 
     const label = document.createElement('label');
     label.className = 'input-label';
@@ -1824,6 +1986,19 @@ function openModuleConfig(id) {
       input.dataset.key = key;
       input.value = currentConfig[key] !== undefined ? currentConfig[key] : (field.default !== undefined ? field.default : '');
       if (field.placeholder) input.placeholder = field.placeholder;
+
+      if (Array.isArray(field.suggestions) && field.suggestions.length > 0) {
+        const listId = `suggestions-${key}-${Math.random().toString(36).slice(2, 8)}`;
+        input.setAttribute('list', listId);
+        const datalist = document.createElement('datalist');
+        datalist.id = listId;
+        field.suggestions.forEach(suggestion => {
+          const option = document.createElement('option');
+          option.value = suggestion;
+          datalist.appendChild(option);
+        });
+        wrapper.appendChild(datalist);
+      }
     }
 
     if (field.type === 'checkbox') {
@@ -1848,6 +2023,22 @@ function openModuleConfig(id) {
 
     form.appendChild(wrapper);
   });
+
+  function updateConditionalFields() {
+    form.querySelectorAll('.config-field[data-visible-when-field]').forEach(wrapper => {
+      const depField = wrapper.dataset.visibleWhenField;
+      const depValue = wrapper.dataset.visibleWhenValue;
+      const input = form.querySelector(`[data-key="${depField}"]`);
+      let currentValue = '';
+      if (input) {
+        currentValue = input.type === 'checkbox' ? String(input.checked) : input.value;
+      }
+      wrapper.style.display = currentValue === depValue ? '' : 'none';
+    });
+  }
+  updateConditionalFields();
+  form.addEventListener('change', updateConditionalFields);
+  form.addEventListener('input', updateConditionalFields);
 
   renderVisibleToField(form, currentConfig, mod);
 
@@ -1982,18 +2173,37 @@ function removeModule(id) {
   updateJson();
 }
 
+function getGridMetrics() {
+  const grid = document.getElementById('grid');
+  const rect = grid.getBoundingClientRect();
+  const style = getComputedStyle(grid);
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const paddingBottom = parseFloat(style.paddingBottom) || 0;
+  const gapX = parseFloat(style.columnGap) || parseFloat(style.gap) || 0;
+  const gapY = parseFloat(style.rowGap) || parseFloat(style.gap) || 0;
+
+  const contentWidth = rect.width - paddingLeft - paddingRight;
+  const contentHeight = rect.height - paddingTop - paddingBottom;
+
+  return {
+    cellWidth: (contentWidth - gapX * (GRID_COLS - 1)) / GRID_COLS,
+    cellHeight: (contentHeight - gapY * (GRID_ROWS - 1)) / GRID_ROWS
+  };
+}
+
 function startDrag(e, id, el) {
   e.preventDefault();
   activeId = id;
-  const grid = document.getElementById('grid');
-  const rect = grid.getBoundingClientRect();
+  const metrics = getGridMetrics();
   dragStart = {
     mouseX: e.clientX,
     mouseY: e.clientY,
     startX: currentPage().modules[id].x,
     startY: currentPage().modules[id].y,
-    gridWidth: rect.width,
-    gridHeight: rect.height,
+    cellWidth: metrics.cellWidth,
+    cellHeight: metrics.cellHeight,
     el
   };
   resizeStart = null;
@@ -2002,15 +2212,14 @@ function startDrag(e, id, el) {
 function startResize(e, id, el) {
   e.preventDefault();
   activeId = id;
-  const grid = document.getElementById('grid');
-  const rect = grid.getBoundingClientRect();
+  const metrics = getGridMetrics();
   resizeStart = {
     mouseX: e.clientX,
     mouseY: e.clientY,
     startWidth: currentPage().modules[id].width,
     startHeight: currentPage().modules[id].height,
-    gridWidth: rect.width,
-    gridHeight: rect.height,
+    cellWidth: metrics.cellWidth,
+    cellHeight: metrics.cellHeight,
     el
   };
   dragStart = null;
@@ -2021,14 +2230,14 @@ function onMouseMove(e) {
   const placement = currentPage().modules[activeId];
 
   if (dragStart) {
-    const dx = (e.clientX - dragStart.mouseX) / dragStart.gridWidth * GRID_COLS;
-    const dy = (e.clientY - dragStart.mouseY) / dragStart.gridHeight * GRID_ROWS;
+    const dx = (e.clientX - dragStart.mouseX) / dragStart.cellWidth;
+    const dy = (e.clientY - dragStart.mouseY) / dragStart.cellHeight;
     placement.x = clamp(snap(dragStart.startX + dx), 0, GRID_COLS - placement.width);
     placement.y = clamp(snap(dragStart.startY + dy), 0, GRID_ROWS - placement.height);
     applyStyle(dragStart.el, placement);
   } else if (resizeStart) {
-    const dw = (e.clientX - resizeStart.mouseX) / resizeStart.gridWidth * GRID_COLS;
-    const dh = (e.clientY - resizeStart.mouseY) / resizeStart.gridHeight * GRID_ROWS;
+    const dw = (e.clientX - resizeStart.mouseX) / resizeStart.cellWidth;
+    const dh = (e.clientY - resizeStart.mouseY) / resizeStart.cellHeight;
     placement.width = clamp(snap(resizeStart.startWidth + dw), 1, GRID_COLS - placement.x);
     placement.height = clamp(snap(resizeStart.startHeight + dh), 1, GRID_ROWS - placement.y);
     applyStyle(resizeStart.el, placement);

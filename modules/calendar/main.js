@@ -1,3 +1,5 @@
+import { fitBaseSize } from '../shared/autoFit.js';
+
 export default function ({ container, config }) {
   const titleEl = container.querySelector('.calendar-title');
   const listView = container.querySelector('.calendar-list-view');
@@ -17,6 +19,12 @@ export default function ({ container, config }) {
 
   listView.classList.toggle('hidden', isGridView);
   gridView.classList.toggle('hidden', !isGridView);
+
+  const fitter = fitBaseSize({
+    container,
+    scale: config.fontScale,
+    ratio: 0.055
+  });
 
   function escapeHtml(text) {
     const div = document.createElement('div');
@@ -56,7 +64,6 @@ export default function ({ container, config }) {
     const days = getDayRange();
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    // Weekday headers
     weekdays.forEach(name => {
       const header = document.createElement('div');
       header.className = 'calendar-weekday-header';
@@ -64,8 +71,6 @@ export default function ({ container, config }) {
       gridEl.appendChild(header);
     });
 
-    // Fill empty cells before first day if it doesn't start on Monday
-    // getDay(): 0 = Sun, 1 = Mon ... we want Mon first
     const firstDayOffset = (days[0].getDay() + 6) % 7;
     for (let i = 0; i < firstDayOffset; i++) {
       const empty = document.createElement('div');
@@ -129,6 +134,7 @@ export default function ({ container, config }) {
       } else {
         listEl.innerHTML = '<li class="calendar-empty">Add an ICS link or upload a file in the config</li>';
       }
+      fitter?.fit();
       return;
     }
 
@@ -143,6 +149,7 @@ export default function ({ container, config }) {
         } else {
           listEl.innerHTML = '<li class="calendar-empty">No upcoming events</li>';
         }
+        fitter?.fit();
         return;
       }
 
@@ -158,6 +165,7 @@ export default function ({ container, config }) {
         listEl.innerHTML = '<li class="calendar-empty">Calendar unavailable</li>';
       }
     }
+    fitter?.fit();
   }
 
   function start() {
@@ -175,5 +183,5 @@ export default function ({ container, config }) {
 
   start();
 
-  return { start, pause, resume: start };
+  return { start, pause, resume: start, destroy: () => fitter?.destroy() };
 }

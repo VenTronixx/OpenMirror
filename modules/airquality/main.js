@@ -1,3 +1,5 @@
+import { fitText } from '../shared/autoFit.js';
+
 export default function ({ container, config }) {
   const titleEl = container.querySelector('.air-title');
   const locationEl = container.querySelector('.air-location');
@@ -10,6 +12,16 @@ export default function ({ container, config }) {
   if (titleEl && config.title) titleEl.textContent = config.title;
 
   const refreshMinutes = Math.max(1, parseInt(config.refreshInterval, 10) || 10);
+
+  const fitter = fitText({
+    container,
+    main: '.air-aqi',
+    sub: ['.air-label', '.air-location', '.air-title'],
+    scale: config.fontScale,
+    mainRatio: 0.55,
+    subRatio: 0.22,
+    widthRatio: 1.5
+  });
 
   async function load() {
     if (!config.location) {
@@ -34,6 +46,7 @@ export default function ({ container, config }) {
       pm10El.textContent = '--';
       o3El.textContent = '--';
     }
+    fitter?.fit();
   }
 
   function start() {
@@ -50,5 +63,5 @@ export default function ({ container, config }) {
   }
 
   start();
-  return { start, pause, resume: start };
+  return { start, pause, resume: start, destroy: () => fitter?.destroy() };
 }

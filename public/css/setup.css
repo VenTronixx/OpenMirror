@@ -391,6 +391,11 @@ button:disabled {
 }
 
 .grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 0.5rem;
+  padding: 2rem;
   position: relative;
   width: min(100%, 1200px);
   aspect-ratio: 16 / 9;
@@ -398,6 +403,7 @@ button:disabled {
     linear-gradient(to right, #222 1px, transparent 1px),
     linear-gradient(to bottom, #222 1px, transparent 1px),
     #000;
+  background-origin: content-box;
   background-size: calc(100% / 12) calc(100% / 8);
   border: 1px solid #333;
   border-radius: 6px;
@@ -409,40 +415,57 @@ button:disabled {
 }
 
 .placed-module {
-  position: absolute;
+  position: relative;
   background: rgba(0, 170, 255, 0.2);
   border: 2px solid #0af;
   border-radius: 5px;
-  padding: 0.25rem;
   cursor: grab;
-  overflow: hidden;
   user-select: none;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .placed-module-header {
-  display: flex;
+  position: absolute;
+  top: -9px;
+  height: 18px;
+  z-index: 10;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
+  gap: 0.3rem;
+  padding: 0 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid #0af;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .placed-module-header strong {
-  font-size: 0.75rem;
-  font-weight: 500;
-  flex: 1;
-  min-width: 0;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.placed-module-header-left {
+  left: 0.5rem;
+}
+
+.placed-module-header-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.placed-module-header-right {
+  right: 0.5rem;
 }
 
 .placed-module-preview {
-  flex: 1;
-  min-height: 0;
-  margin-top: 0.25rem;
-  position: relative;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.4);
@@ -452,18 +475,36 @@ button:disabled {
   display: none;
 }
 
+.module-align-left {
+  text-align: left;
+  --module-align: left;
+  --module-align-flex: flex-start;
+}
+
+.module-align-center {
+  text-align: center;
+  --module-align: center;
+  --module-align-flex: center;
+}
+
+.module-align-right {
+  text-align: right;
+  --module-align: right;
+  --module-align-flex: flex-end;
+}
+
 .placed-module-header .remove-btn,
 .placed-module-header .config-btn {
   position: relative;
   top: auto;
   right: auto;
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
   color: #fff;
   border: none;
-  border-radius: 3px;
-  font-size: 12px;
-  line-height: 20px;
+  border-radius: 2px;
+  font-size: 10px;
+  line-height: 14px;
   text-align: center;
   cursor: pointer;
   padding: 0;
@@ -542,13 +583,20 @@ button:disabled {
   flex-shrink: 0;
 }
 
-#module-list .duplicate-btn {
+#module-list .module-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+#module-list .duplicate-btn,
+#module-list .delete-module-btn {
   width: 22px;
   height: 22px;
   padding: 0;
   border-radius: 4px;
   background: #333;
-  color: #0af;
   border: 1px solid #444;
   cursor: pointer;
   font-size: 0.85rem;
@@ -556,10 +604,24 @@ button:disabled {
   flex-shrink: 0;
 }
 
+#module-list .duplicate-btn {
+  color: #0af;
+}
+
+#module-list .delete-module-btn {
+  color: #f44;
+}
+
 #module-list .duplicate-btn:hover {
   background: #0af;
   color: #fff;
   border-color: #0af;
+}
+
+#module-list .delete-module-btn:hover {
+  background: #f44;
+  color: #fff;
+  border-color: #f44;
 }
 
 /* Section headers with counts */
@@ -882,6 +944,33 @@ button:disabled {
 
 .face-item .train-face-btn:disabled {
   background: #555;
+}
+
+.face-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.face-name {
+  font-size: 0.9rem;
+}
+
+.face-progress {
+  font-size: 0.75rem;
+  color: #0af;
+  margin-top: 0.15rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.button-row button {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .event-field {

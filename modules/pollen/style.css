@@ -1,0 +1,95 @@
+.pollen-title {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.pollen-location {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-bottom: 0.35rem;
+}
+
+.pollen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pollen-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+}
+
+.pollen-row:last-child {
+  border-bottom: none;
+}
+
+.pollen-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pollen-value-block {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
+.pollen-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 1.4rem;
+  text-align: right;
+}
+
+.pollen-level {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.pollen-level.none {
+  background: rgba(120, 120, 120, 0.25);
+}
+
+.pollen-level.low {
+  background: rgba(80, 160, 80, 0.25);
+}
+
+.pollen-level.moderate {
+  background: rgba(220, 180, 60, 0.25);
+}
+
+.pollen-level.high {
+  background: rgba(220, 120, 60, 0.25);
+}
+
+.pollen-level.very-high {
+  background: rgba(200, 60, 60, 0.25);
+}
+
+/* Hide raw value on very narrow modules to keep the list readable */
+@container (max-width: 140px) {
+  .pollen-value {
+    display: none;
+  }
+}

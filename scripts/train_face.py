@@ -15,7 +15,19 @@ import json
 import os
 import sys
 
-import cv2
+
+def _configure_opencv_env():
+    for key in (
+        'OPENCV_VIDEOIO_PRIORITY_GSTREAMER',
+        'OPENCV_VIDEOIO_PRIORITY_V4L2',
+        'OPENCV_VIDEOIO_PRIORITY_MSMF',
+    ):
+        os.environ.setdefault(key, '0')
+    os.environ.setdefault('GST_REGISTRY_UPDATE', 'no')
+
+
+_configure_opencv_env()
+import cv2  # noqa: E402
 
 
 def parse_args():

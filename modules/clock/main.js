@@ -1,3 +1,5 @@
+import { fitText } from '../shared/autoFit.js';
+
 export default function ({ container, config }) {
   const titleEl = container.querySelector('.clock-title');
   const timeEl = container.querySelector('.clock-time');
@@ -35,10 +37,28 @@ export default function ({ container, config }) {
     dateEl.textContent = now.toLocaleDateString([], dateOptions);
   }
 
+  const subSelectors = [];
+  if (dateEl && config.showDate !== false) subSelectors.push('.clock-date');
+  if (titleEl && config.title) subSelectors.push('.clock-title');
+
+  const fitter = fitText({
+    container,
+    main: '.clock-time',
+    sub: subSelectors,
+    scale: config.fontScale,
+    mainRatio: 0.75,
+    subRatio: 0.28,
+    widthRatio: 2.4
+  });
+
   function start() {
     if (interval) return;
     update();
-    interval = setInterval(update, 1000);
+    fitter?.fit();
+    interval = setInterval(() => {
+      update();
+      fitter?.fit();
+    }, 1000);
   }
 
   function pause() {
@@ -50,5 +70,5 @@ export default function ({ container, config }) {
 
   start();
 
-  return { start, pause, resume: start };
+  return { start, pause, resume: start, destroy: () => fitter?.destroy() };
 }

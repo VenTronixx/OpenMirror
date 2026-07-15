@@ -46,12 +46,22 @@
     "maxEvents": {
       "type": "number",
       "label": "Max events",
-      "default": 10
+      "default": 10,
+      "visibleWhen": {
+        "field": "viewMode",
+        "value": "upcoming"
+      }
     },
     "refreshInterval": {
       "type": "number",
       "label": "Refresh interval (minutes)",
       "default": 5
+    },
+    "fontScale": {
+      "type": "number",
+      "label": "Font scale",
+      "description": "Multiplier for text size. 1 = auto-fit, 1.5 = 50 % bigger, 0.7 = smaller.",
+      "default": 1
     },
     "align": {
       "type": "select",

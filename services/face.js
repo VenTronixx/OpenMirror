@@ -25,6 +25,7 @@ class FaceService extends EventEmitter {
     this.lostTimer = null;
     this.testMode = false;
     this.previewPath = PREVIEW_PATH;
+    this.previewProcess = null;
     this.training = { state: 'idle', personId: null, name: null, error: null, startedAt: null, finishedAt: null, result: null };
   }
 
@@ -42,7 +43,8 @@ class FaceService extends EventEmitter {
   }
 
   start() {
-    this.stop();
+    this.stopRecognition();
+    this.stopCameraPreview();
 
     const faceLock = this.config.faceLock || {};
     if (!faceLock.enabled && !this.testMode) {
@@ -78,7 +80,7 @@ class FaceService extends EventEmitter {
       '--labels', labelsPath,
       '--algorithm', algorithm,
       '--threshold', String(threshold),
-      '--interval', String(faceLock.scanInterval || 1),
+      '--interval', String(this.testMode ? 0.5 : (faceLock.scanInterval || 1)),
       '--lost-frames', String((faceLock.releaseDelay || 3) + 2),
       '--camera', String(cameraIndex),
       '--width', String(cameraWidth),
@@ -87,8 +89,27 @@ class FaceService extends EventEmitter {
       '--preview-interval', '0.2'
     ];
 
+    // Make sure the preview directory exists before the Python process tries to write there.
+    try {
+      fs.mkdirSync(path.dirname(PREVIEW_PATH), { recursive: true });
+    } catch (err) {
+      console.warn('Could not create preview directory:', err.message);
+    }
+
     console.log(`Starting face recognition (${algorithm})`);
     this.process = spawnPython(args, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+    // Watchdog: if the Python process hangs during OpenCV import, kill it and notify.
+    // OpenCV can take 10-15 s to load on a Pi, so allow a generous startup window.
+    this.startupTimeout = setTimeout(() => {
+      console.error('Face recognition process did not start within 30 seconds (OpenCV import hang?)');
+      this.emit('face', { type: 'error', message: 'Face recognition failed to start (OpenCV import hang?)' });
+      this.stopRecognition();
+    }, 30000);
+
+    const onFirstOutput = () => this._clearStartupTimeout();
+    this.process.stdout.once('data', onFirstOutput);
+    this.process.stderr.once('data', onFirstOutput);
 
     let buffer = '';
     this.process.stdout.on('data', data => {
@@ -112,6 +133,7 @@ class FaceService extends EventEmitter {
     });
 
     this.process.on('close', code => {
+      this._clearStartupTimeout();
       console.log(`Face recognition process exited with code ${code}`);
       this.process = null;
       // If we were only running for a test and face lock is off, do not restart.
@@ -121,7 +143,15 @@ class FaceService extends EventEmitter {
     });
   }
 
-  stop() {
+  _clearStartupTimeout() {
+    if (this.startupTimeout) {
+      clearTimeout(this.startupTimeout);
+      this.startupTimeout = null;
+    }
+  }
+
+  stopRecognition() {
+    this._clearStartupTimeout();
     if (this.releaseTimer) {
       clearTimeout(this.releaseTimer);
       this.releaseTimer = null;
@@ -140,6 +170,70 @@ class FaceService extends EventEmitter {
     }
   }
 
+  stopCameraPreview() {
+    if (this.previewProcess) {
+      try {
+        this.previewProcess.kill('SIGTERM');
+      } catch (err) {
+        // ignore
+      }
+      this.previewProcess = null;
+      return { ok: true, message: 'Camera preview stopped' };
+    }
+    return { ok: true, message: 'Camera preview was not running' };
+  }
+
+  stop() {
+    this.stopRecognition();
+    this.stopCameraPreview();
+  }
+
+  startCameraPreview() {
+    if (this.previewProcess) {
+      return { ok: true, message: 'Camera preview already running' };
+    }
+
+    // Recognition also writes preview frames; no need to run both on the same camera.
+    if (this.process) {
+      return { ok: true, message: 'Recognition is already running' };
+    }
+
+    const faceLock = this.config.faceLock || {};
+    const hardwareConfig = this.config.hardware || [];
+    const cameraDevice = hardwareConfig.find(d => d.type === 'camera' && d.enabled !== false);
+    const cameraIndex = cameraDevice?.settings?.cameraIndex != null ? cameraDevice.settings.cameraIndex : (faceLock.camera != null ? faceLock.camera : 0);
+    const cameraWidth = cameraDevice?.settings?.width || faceLock.cameraWidth || 640;
+    const cameraHeight = cameraDevice?.settings?.height || faceLock.cameraHeight || 480;
+
+    try {
+      fs.mkdirSync(path.dirname(PREVIEW_PATH), { recursive: true });
+    } catch (err) {
+      console.warn('Could not create preview directory:', err.message);
+    }
+
+    const fps = 2;
+    const args = [
+      '-y', '-f', 'v4l2', '-input_format', 'mjpeg',
+      '-i', `/dev/video${cameraIndex}`,
+      '-vf', `fps=${fps},scale=${cameraWidth}:${cameraHeight}`,
+      '-update', '1', '-q:v', '2', PREVIEW_PATH
+    ];
+
+    console.log(`Starting camera preview (camera ${cameraIndex})`);
+    this.previewProcess = spawn('ffmpeg', args, { stdio: 'ignore' });
+
+    this.previewProcess.on('error', err => {
+      console.error('Camera preview process error:', err.message);
+    });
+
+    this.previewProcess.on('close', code => {
+      console.log(`Camera preview process exited with code ${code}`);
+      this.previewProcess = null;
+    });
+
+    return { ok: true, message: 'Camera preview started' };
+  }
+
   startTest() {
     if (this.testMode && this.process) {
       return { ok: true, message: 'Test already running' };
@@ -149,7 +243,14 @@ class FaceService extends EventEmitter {
       throw new Error('No trained face model available. Train a face first.');
     }
     this.testMode = true;
-    this.start();
+    // Give the camera a moment to be released if the preview was just stopped.
+    const hadPreview = this.previewProcess !== null;
+    this.stopCameraPreview();
+    if (hadPreview) {
+      setTimeout(() => this.start(), 1200);
+    } else {
+      this.start();
+    }
     return { ok: true, message: 'Face recognition test started' };
   }
 
@@ -165,6 +266,7 @@ class FaceService extends EventEmitter {
   handleRecognitionEvent(msg) {
     if (msg.event === 'error') {
       console.error('Face recognition error:', msg.message);
+      this.emit('face', { type: 'error', message: msg.message });
       return;
     }
 

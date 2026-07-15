@@ -18,6 +18,10 @@ const PORT = process.env.PORT || 3000;
 const CONFIG_PATH = path.join(__dirname, 'config', 'config.json');
 const DEFAULT_CONFIG_PATH = path.join(__dirname, 'config', 'default.json');
 const MODULES_DIR = path.join(__dirname, 'modules');
+const BUILTIN_MODULES = new Set([
+  'airquality', 'calendar', 'clock', 'countdown', 'immich', 'pollen',
+  'rss', 'spotify', 'systeminfo', 'ticker', 'todoist', 'traveltime', 'weather'
+]);
 const FACES_DIR = path.join(__dirname, 'data', 'faces');
 const HARDWARE_SCHEMA_PATH = path.join(__dirname, 'config', 'hardware-schema.json');
 
@@ -135,7 +139,7 @@ presence.on('presence', event => {
 });
 mqttService.on('event', event => broadcast(event));
 faceService.on('face', event => {
-  broadcast({ type: 'face', event: event.type, personId: event.personId, confidence: event.confidence });
+  broadcast({ type: 'face', event: event.type, personId: event.personId, confidence: event.confidence, message: event.message });
   saasService.reportEvent('face.' + event.type, event);
   if (event.type === 'detected') {
     presence.wake();
@@ -442,6 +446,27 @@ app.post('/api/modules/:moduleId/duplicate', (req, res) => {
   }
 });
 
+app.delete('/api/modules/:moduleId', (req, res) => {
+  const { moduleId } = req.params;
+
+  if (BUILTIN_MODULES.has(moduleId)) {
+    return res.status(403).json({ error: 'cannot delete built-in module' });
+  }
+
+  const targetPath = path.join(MODULES_DIR, moduleId);
+  if (!fs.existsSync(targetPath)) {
+    return res.status(404).json({ error: 'module not found' });
+  }
+
+  try {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete module error:', err.message);
+    res.status(500).json({ error: 'failed to delete module' });
+  }
+});
+
 app.get('/api/ticker', async (req, res) => {
   const symbols = (req.query.symbols || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const currency = (req.query.currency || 'usd').toLowerCase();
@@ -542,6 +567,167 @@ app.get('/api/airquality', async (req, res) => {
     res.status(500).json({ error: 'air quality unavailable' });
   }
 });
+
+app.get('/api/pollen', async (req, res) => {
+  const location = req.query.location;
+  const provider = req.query.provider || 'openmeteo';
+  if (!location) return res.status(400).json({ error: 'location required' });
+
+  try {
+    if (provider === 'dwd') {
+      const dwd = await fetchDwdPollen(location);
+      return res.json(dwd);
+    }
+
+    const pollen = await fetchOpenMeteoPollen(location);
+    res.json(pollen);
+  } catch (err) {
+    console.error('Pollen error:', err.message);
+    res.status(500).json({ error: 'pollen unavailable' });
+  }
+});
+
+async function fetchOpenMeteoPollen(location) {
+  const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`);
+  if (!geoRes.ok) throw new Error('geocoding failed');
+  const geoData = await geoRes.json();
+  if (!geoData.results || geoData.results.length === 0) throw new Error('location not found');
+  const place = geoData.results[0];
+
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${place.latitude}&longitude=${place.longitude}&hourly=alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen&timezone=auto&forecast_days=1`;
+  const pollenRes = await fetch(url);
+  if (!pollenRes.ok) throw new Error('pollen fetch failed');
+  const data = await pollenRes.json();
+
+  const hourly = data.hourly || {};
+  const now = new Date();
+  const currentHour = now.getHours();
+  const index = Math.min(currentHour, (hourly.time || []).length - 1);
+
+  const mapping = {
+    alder_pollen: 'Alder',
+    birch_pollen: 'Birch',
+    grass_pollen: 'Grass',
+    mugwort_pollen: 'Mugwort',
+    olive_pollen: 'Olive',
+    ragweed_pollen: 'Ragweed'
+  };
+
+  const rows = Object.entries(mapping).map(([key, name]) => {
+    const arr = hourly[key] || [];
+    const value = arr[index] != null ? arr[index] : null;
+    return { name, value, level: pollenLevel(value) };
+  }).filter(r => r.value != null).sort((a, b) => b.value - a.value);
+
+  return {
+    location: `${place.name}, ${place.country_code || ''}`,
+    provider: 'openmeteo',
+    pollen: rows
+  };
+}
+
+async function fetchDwdPollen(location) {
+  const dwdRes = await fetch('https://opendata.dwd.de/climate_environment/health/alerts/s31fg.json');
+  if (!dwdRes.ok) throw new Error('dwd fetch failed');
+  const data = await dwdRes.json();
+
+  const search = location.toLowerCase();
+  const regions = data.content || [];
+  let match = null;
+
+  // Prefer exact partregion match, then exact region match.
+  for (const region of regions) {
+    const partName = (region.partregion_name || '').toLowerCase();
+    if (partName && partName === search) {
+      match = region;
+      break;
+    }
+  }
+
+  if (!match) {
+    for (const region of regions) {
+      const regionName = (region.region_name || '').toLowerCase();
+      if (regionName && regionName === search) {
+        match = region;
+        break;
+      }
+    }
+  }
+
+  // Fallback to substring partregion match, then substring region match.
+  if (!match) {
+    for (const region of regions) {
+      const partName = (region.partregion_name || '').toLowerCase();
+      if (partName && partName.includes(search)) {
+        match = region;
+        break;
+      }
+    }
+  }
+
+  if (!match) {
+    for (const region of regions) {
+      const regionName = (region.region_name || '').toLowerCase();
+      if (regionName && regionName.includes(search)) {
+        match = region;
+        break;
+      }
+    }
+  }
+
+  if (!match) throw new Error('dwd region not found');
+
+  const nameMapping = {
+    Birke: 'Birch',
+    Esche: 'Ash',
+    Graeser: 'Grass',
+    Beifuss: 'Mugwort',
+    Erle: 'Alder',
+    Ambrosia: 'Ragweed',
+    Hasel: 'Hazel',
+    Roggen: 'Rye'
+  };
+
+  const rows = [];
+  const pollenData = match.Pollen || {};
+  for (const [german, english] of Object.entries(nameMapping)) {
+    const entry = pollenData[german];
+    if (!entry || entry.today == null) continue;
+    const value = parseDwdLevel(entry.today);
+    rows.push({ name: english, value, level: dwdLevel(value) });
+  }
+
+  rows.sort((a, b) => b.value - a.value);
+
+  return {
+    location: match.partregion_name || match.region_name,
+    provider: 'dwd',
+    pollen: rows
+  };
+}
+
+function parseDwdLevel(value) {
+  if (!value || value === '0') return 0;
+  const parts = String(value).split('-').map(Number);
+  const max = Math.max(...parts);
+  return Number.isFinite(max) ? max : 0;
+}
+
+function dwdLevel(value) {
+  if (value === 0) return 'none';
+  if (value <= 1) return 'low';
+  if (value <= 2) return 'moderate';
+  if (value <= 3) return 'high';
+  return 'very-high';
+}
+
+function pollenLevel(value) {
+  if (value === 0 || value == null) return 'none';
+  if (value <= 10) return 'low';
+  if (value <= 50) return 'moderate';
+  if (value <= 100) return 'high';
+  return 'very-high';
+}
 
 app.get('/api/traveltime', async (req, res) => {
   const from = req.query.from;
@@ -687,7 +873,9 @@ app.get('/api/faces/camera', (req, res) => {
     camera: cameraDevice?.settings?.cameraIndex != null ? cameraDevice.settings.cameraIndex : (faceLock.camera != null ? faceLock.camera : 0),
     width: cameraDevice?.settings?.width || faceLock.cameraWidth || 640,
     height: cameraDevice?.settings?.height || faceLock.cameraHeight || 480,
-    running: !!faceService.process,
+    running: !!faceService.process || !!faceService.previewProcess,
+    recognition: !!faceService.process,
+    preview: !!faceService.previewProcess,
     testMode: faceService.testMode
   });
 });
@@ -700,7 +888,7 @@ app.get('/api/faces/camera/preview', (req, res) => {
     }
     const stats = fs.statSync(previewPath);
     const ageMs = Date.now() - stats.mtimeMs;
-    if (ageMs > 3000) {
+    if (ageMs > 5000) {
       return res.status(404).json({ error: 'Preview stale' });
     }
     res.setHeader('Content-Type', 'image/jpeg');
@@ -728,6 +916,24 @@ app.post('/api/faces/test/stop', (req, res) => {
     res.json(faceService.stopTest());
   } catch (err) {
     console.error('Face test stop error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/faces/camera/preview/start', (req, res) => {
+  try {
+    res.json(faceService.startCameraPreview());
+  } catch (err) {
+    console.error('Camera preview start error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/faces/camera/preview/stop', (req, res) => {
+  try {
+    res.json(faceService.stopCameraPreview());
+  } catch (err) {
+    console.error('Camera preview stop error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

@@ -9,31 +9,20 @@
 }
 
 .clock-title {
-  font-size: calc(clamp(0.6rem, 4cqmin, 1.2rem) * var(--module-scale, 1) * var(--font-scale, 1));
   opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: calc(0.25rem * var(--module-scale, 1));
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
 }
 
 .clock-time {
-  font-size: calc(clamp(1.5rem, 35cqmin, 12rem) * var(--module-scale, 1) * var(--font-scale, 1));
   font-weight: 300;
   line-height: 1;
 }
 
 .clock-date {
-  font-size: calc(clamp(0.7rem, 10cqmin, 2rem) * var(--module-scale, 1) * var(--font-scale, 1));
   opacity: 0.8;
-  margin-top: calc(0.25rem * var(--module-scale, 1));
-}
-
-/* Short modules (like 4x1) need a larger fill factor because the width is plentiful. */
-@container module (max-height: 160px) {
-  .clock-time {
-    font-size: calc(clamp(1.5rem, 50cqmin, 15rem) * var(--module-scale, 1) * var(--font-scale, 1));
-  }
-  .clock-date {
-    font-size: calc(clamp(0.7rem, 14cqmin, 2.5rem) * var(--module-scale, 1) * var(--font-scale, 1));
-  }
+  margin-top: 0.25rem;
+  line-height: 1.2;
 }

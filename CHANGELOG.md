@@ -4,21 +4,56 @@ All notable changes to OpenMirror are documented in this file.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-15
+
+> **Baseline release.** This release gets the core platform and modules into a working, testable state. Many features are functional, but first releases are meant to establish the baseline of modules and functions — deeper integration, polish, and real-world testing are still in progress.
+
 ### Added
 
 - Expanded README with the full project story, repository link, and descriptions for all built-in modules.
 - Repository URLs in README, docs, and package.json now point to `https://github.com/VenTronixx/OpenMirror`.
 - `.gitignore` now excludes the external website, SaaS planning, and strategic blueprint directories.
+- New **Pollen** module with Open-Meteo (global) and DWD (Germany) data sources, sorted high to low, and optional raw value display.
+- Searchable DWD region dropdown for the Pollen module (uses real DWD region names such as "Ostwestfalen").
+- Conditional config field support (`visibleWhen`) in the setup dashboard; used to show the DWD region field only when the DWD provider is selected.
+- Shared module auto-fit helper at `modules/shared/autoFit.js` for consistent font scaling across modules.
+- JavaScript-driven auto-fit for Clock, Weather, Air Quality, and Calendar modules.
+- Calendar grid/list view support with the "Max events" field hidden when a grid view is selected.
+- Server endpoint `DELETE /api/modules/:moduleId` to permanently delete custom (duplicated) module folders.
+- Trash-can delete button in the setup module list for custom modules, with a confirmation dialog and automatic cleanup of any placed instances.
+- `ROADMAP.md` to track current work and upcoming plans.
+- Per-person training progress text shown directly under the person's name in the Faces list while training is running.
+- Camera hardware type is now dispatched correctly in the hardware service so a configured USB/Pi camera is no longer logged as "Unknown hardware type: camera".
+- Face service now ensures the preview directory exists before starting the Python recognition process.
+- New **Camera Preview** button in the Faces tab. Starts a lightweight preview process so you can verify the camera works without a trained face model.
+- New `scripts/camera_preview.py` helper and `POST /api/faces/camera/preview/start|stop` endpoints.
+- `scripts/deploy-pi.sh` now syncs the new `camera_preview.py` script to the Pi.
+- Rewrote camera capture to use `ffmpeg` with V4L2 instead of OpenCV/picamera2, because the Pi's OpenCV/picamera2 backend hangs with this USB camera. Added `scripts/camera_utils.py` as a shared ffmpeg/picamera2/OpenCV camera abstraction.
+- Recognition test mode now scans every 0.5 s (was 1 s) for a more responsive preview.
+- Preview stale threshold relaxed from 3 s to 5 s to account for ffmpeg startup time.
+- Setup dashboard camera preview now uses `fetch()` + blob URLs instead of direct `img.src`, so 404s during ffmpeg startup no longer break the image loader.
+- Face recognition scripts now set OpenCV environment variables to disable GStreamer/V4L2 backend probing before importing `cv2`.
+- Face recognition process registers `SIGTERM`/`SIGINT` handlers so the child `ffmpeg` capture process is always cleaned up on stop.
+- Face recognition startup watchdog now allows up to 30 s for OpenCV to load on the Pi (was effectively killed after ~10 s).
+- Setup dashboard shows a clearer "Loading face recognition model (this can take 10–20 s)…" message while the recognition process starts.
+- Face-test WebSocket messages now include an `error` field and the UI displays recognition errors in red.
+- Unknown face events in the test UI now show the confidence value so the threshold can be tuned more easily.
+- Added a **Confidence threshold** slider in the Face Lock settings (under General settings) so the recognition tolerance can be adjusted without editing config files.
 
 ### Changed
 
 - README install and clone commands updated to the new repository location.
 - Included modules section now covers all current modules with practical examples.
+- Preview grid in the setup dashboard now matches the real mirror CSS Grid layout and container sizing.
+- Module preview header now floats above the module cell without consuming content space, fixing clipped badges and buttons.
+- Clock and Weather modules refactored to use the shared auto-fit helper instead of fixed CSS font sizes.
+- Air Quality and Calendar modules updated for container-based auto-fit sizing.
+- Default `faceLock.confidenceThreshold` raised from `0.6` to `0.8` to be more tolerant while still filtering strangers.
 
-### In progress
+### Fixed
 
-- Face training and camera improvements.
-- General stability, setup, and module quality improvements.
+- Custom module deletion now removes the module folder from disk; the previous "X" button only removed instances from the page config.
+- LBPH recognition now resizes detected faces to 200×200 and adds the same 10% margin used during training, improving recognition accuracy and crop consistency.
 
 ## [0.11.0] - 2026-07-10
 

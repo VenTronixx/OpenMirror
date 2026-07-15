@@ -91,6 +91,9 @@ OpenMirror ships with a set of ready-to-use modules. Each module is a folder ins
 - **Air Quality**: air quality index and pollutant breakdown for any city using Open-Meteo.  
   *Example: display the AQI in your city so you know whether to open the windows.*
 
+- **Pollen**: pollen levels sorted from highest to lowest. Supports Open-Meteo globally and DWD for Germany. For DWD, enter a DWD region such as `Ostwestfalen`, `Nordrhein-Westfalen`, or `Berlin` instead of a city name.  
+  *Example: see which pollen types are high today before leaving the house.*
+
 - **Calendar**: upcoming events from any ICS feed (Google Calendar, Nextcloud, Outlook, etc.).  
   *Example: add one calendar per family member or one for work and one for private events.*
 
