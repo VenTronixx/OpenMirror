@@ -4,6 +4,14 @@ All notable changes to OpenMirror are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- GPIO hardware support rewritten to use `libgpiod` (`gpiomon`/`gpioget`) instead of `onoff`, because Raspberry Pi OS Bookworm disables the legacy sysfs GPIO interface. This makes GPIO input events and current-state reads actually work on the Pi.
+
+### Added
+
+- `GET /api/hardware/gpio/:deviceId/:pin` endpoint returns the last known state of a configured GPIO input pin.
+
 ## [0.12.0] - 2026-07-15
 
 > **Baseline release.** This release gets the core platform and modules into a working, testable state. Many features are functional, but first releases are meant to establish the baseline of modules and functions — deeper integration, polish, and real-world testing are still in progress.

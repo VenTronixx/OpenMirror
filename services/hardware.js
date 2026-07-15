@@ -1,4 +1,7 @@
 const { EventEmitter } = require('events');
+const { spawn, execSync } = require('child_process');
+
+const GPIO_CHIP = 'gpiochip0';
 
 class HardwareService extends EventEmitter {
   constructor(config = {}) {
@@ -51,19 +54,13 @@ class HardwareService extends EventEmitter {
   }
 
   startGpio(device) {
-    let Gpio;
-    try {
-      Gpio = require('onoff').Gpio;
-    } catch (err) {
-      throw new Error('onoff package not installed. Run: npm install onoff');
-    }
-
     const settings = device.settings || {};
     const pins = Array.isArray(settings.pins) && settings.pins.length > 0
       ? settings.pins
       : [{ pin: settings.pin, edge: settings.edge || 'both', event: device.events?.high || device.events?.low }];
 
-    const instances = [];
+    const processes = [];
+    const lastValues = new Map();
     pins.forEach(pinConfig => {
       const pin = parseInt(pinConfig.pin, 10);
       const edge = pinConfig.edge || 'both';
@@ -74,33 +71,95 @@ class HardwareService extends EventEmitter {
         return;
       }
 
-      const gpio = new Gpio(pin, 'in', edge);
-      instances.push(gpio);
+      const validEdges = new Set(['rising', 'falling', 'both']);
+      const gpiomonEdge = validEdges.has(edge) ? edge : 'both';
 
-      gpio.watch((err, value) => {
-        if (err) {
-          console.error(`GPIO ${device.id} pin ${pin} error:`, err.message);
-          return;
+      // Read the initial level before the monitor claims the line.
+      try {
+        const initial = execSync(`gpioget --chip ${GPIO_CHIP} ${pin}`).toString().trim();
+        const initialValue = parseInt(initial, 10);
+        if (!isNaN(initialValue)) {
+          lastValues.set(pin, initialValue);
         }
-        if (eventName) {
-          this.emit('event', {
-            type: 'event',
-            eventType: eventName,
-            data: { deviceId: device.id, value, pin }
-          });
+      } catch (err) {
+        console.warn(`GPIO ${device.id} pin ${pin}: could not read initial value:`, err.message);
+      }
+
+      const proc = spawn('gpiomon', [
+        '--format=%o:%e',
+        '--edges', gpiomonEdge,
+        '--chip', GPIO_CHIP,
+        String(pin)
+      ]);
+
+      let buffer = '';
+      proc.stdout.on('data', data => {
+        buffer += data.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+          const parts = trimmed.split(':');
+          if (parts.length < 2) return;
+          const eventType = parts[1];
+          const value = eventType === '1' ? 1 : (eventType === '2' ? 0 : null);
+          if (value === null) return;
+          lastValues.set(pin, value);
+          if (eventName) {
+            this.emit('event', {
+              type: 'event',
+              eventType: eventName,
+              data: { deviceId: device.id, value, pin }
+            });
+          }
+        });
+      });
+
+      proc.stderr.on('data', data => {
+        console.error(`GPIO ${device.id} pin ${pin} error:`, data.toString().trim());
+      });
+
+      proc.on('close', code => {
+        if (code !== 0 && code !== null) {
+          console.log(`GPIO ${device.id} pin ${pin} monitor exited with code ${code}`);
         }
       });
 
-      console.log(`Started GPIO ${device.id} pin ${pin} (${edge})`);
+      processes.push({ pin, proc });
+      console.log(`Started GPIO ${device.id} pin ${pin} (${gpiomonEdge})`);
     });
 
     this.devices.set(device.id, {
       type: 'gpio',
-      instance: instances,
+      instance: processes,
+      lastValues,
       close() {
-        instances.forEach(gpio => gpio.unexport());
+        processes.forEach(({ proc }) => {
+          try {
+            proc.kill('SIGTERM');
+          } catch (err) {
+            // ignore
+          }
+        });
       }
     });
+  }
+
+  readGpio(deviceId, pin) {
+    const device = this.devices.get(deviceId);
+    if (!device || device.type !== 'gpio') {
+      return { error: 'GPIO device not running' };
+    }
+    const entry = device.instance.find(p => p.pin === pin);
+    if (!entry) {
+      return { error: `Pin ${pin} not configured for device ${deviceId}` };
+    }
+    const cached = device.lastValues.get(pin);
+    if (typeof cached === 'number') {
+      return { value: cached };
+    }
+    return { error: `No value received yet for pin ${pin}` };
   }
 
   startRadar(device) {

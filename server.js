@@ -1077,6 +1077,18 @@ app.get('/api/hardware/schema', (req, res) => {
   res.json(JSON.parse(fs.readFileSync(HARDWARE_SCHEMA_PATH, 'utf8')));
 });
 
+app.get('/api/hardware/gpio/:deviceId/:pin', (req, res) => {
+  const pin = parseInt(req.params.pin, 10);
+  if (isNaN(pin)) {
+    return res.status(400).json({ error: 'Invalid pin number' });
+  }
+  const result = hardware.readGpio(req.params.deviceId, pin);
+  if (result.error) {
+    return res.status(404).json({ error: result.error });
+  }
+  res.json({ deviceId: req.params.deviceId, pin, value: result.value });
+});
+
 app.post('/api/hardware/speaker/:id/volume', (req, res) => {
   const device = (config.hardware || []).find(d => d.id === req.params.id && d.type === 'speaker');
   if (!device) return res.status(404).json({ error: 'speaker not found' });
